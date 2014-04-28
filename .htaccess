@@ -1,1 +1,3 @@
+#Causes all files (except for index.php and importgames.php) to be loaded in as
+#/stats/index.php/[FILE] instead of /stats/[FILE]
 RewriteRule ^(?:(?!index.php|importgames.php).)*$ index.php$1 [L]

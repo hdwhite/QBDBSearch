@@ -29,6 +29,8 @@ switch($page)
 }
 
 //Get the associated classes
+//Variable names are limited to what is produced by the switch statement,
+//so $_GET abuse won't happen here
 require_once("model/Model.php");
 require_once("model/$model.php");
 require_once("view/$view.php");
