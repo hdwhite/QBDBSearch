@@ -29,10 +29,10 @@ switch($page)
 }
 
 //Get the associated classes
-require_once("stats/model/Model.php");
-require_once("stats/model/$model.php");
-require_once("stats/view/$view.php");
-require_once("stats/controller/$controller.php");
+require_once("model/Model.php");
+require_once("model/$model.php");
+require_once("view/$view.php");
+require_once("controller/$controller.php");
 
 //Initialise the classes
 $model = new $model();

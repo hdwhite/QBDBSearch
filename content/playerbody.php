@@ -1,5 +1,5 @@
 <div id="content">
-	<?php require("stats/content/form.php"); ?>
+	<?php require("content/form.php"); ?>
 	<div class="entry">
 		<table border="1" class="sortable">
 			<tr><th>Date</th><th>Tournament</th><th>Team</th><th>Player</th><th>Phase</th></tr>

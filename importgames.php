@@ -1,7 +1,7 @@
 <?php
 	//Gets table names and other database stuff. Actual table names are hidden
 	//in case someone finds a security hole.
-	require_once("newstats/dbnames.inc");
+	require_once("dbnames.inc");
 
 	//Fetches the number of tournament DB entries
 	$dbstats = file_get_contents("http://hsquizbowl.org/db/tournaments/dbstats.php");

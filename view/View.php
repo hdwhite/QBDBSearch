@@ -21,9 +21,9 @@ class View
 
 		//All pages have very similar headers and footers, and an associated main
 		//content section
-		include("stats/content/header.php");
-		include("stats/content/" . $this->model->gettype() . "body.php");
-		include("stats/content/footer.php");
+		include("content/header.php");
+		include("content/" . $this->model->gettype() . "body.php");
+		include("content/footer.php");
 
 		//Stores the buffer as a string and clears it
 		$outstring = ob_get_contents();

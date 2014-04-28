@@ -10,7 +10,7 @@ abstract class Model
 	//Initialises the MySQL connection
 	public function init()
 	{
-		require_once("stats/dbnames.inc");
+		require_once("dbnames.inc");
 		require_once($_dbconfig);
 		$this->playerdb = $_playerdb;
 		$this->teamdb = $_teamdb;

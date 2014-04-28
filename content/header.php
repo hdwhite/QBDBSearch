@@ -9,5 +9,5 @@
 		<div id="container">
 			<div id="header">
 				<h2><?=$headertext ?></h2>
-				<?php $sel=1; include("header.php"); ?>
+				<?php $sel=1; include("../header.php"); ?>
 			</div>
