@@ -34,3 +34,4 @@ class SearchModel extends Model
 		return $queryarray;
 	}
 }
+?>
