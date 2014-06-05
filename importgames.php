@@ -7,6 +7,9 @@
 	$dbstats = file_get_contents("http://hsquizbowl.org/db/tournaments/dbstats.php");
 	preg_match("/max=(\d+)/", $dbstats, $statarray);
 	$numtourneys = $statarray[1];
+	//There is no easy way to tell how many tournaments are stored on the NAQT
+	//databbase, so that number has to be entered manually
+	$numnaqt = 6000;
 
 	//Ensures that others cannot run the script
 	session_start();
@@ -19,10 +22,73 @@
 	require_once($_dbconfig); //connects to MySQL
 
 	//Using new tables allows the database to still be used while this is happening
+	$mysqli->query("DROP TABLE $_newteamdb, $_newplayerdb");
 	$mysqli->query("CREATE TABLE $_newteamdb LIKE $_teamdb");
 	$mysqli->query("CREATE TABLE $_newplayerdb LIKE $_playerdb");
 	echo("Tables created.<br>");
 
+	//Prepare the SQL insertions
+	$teamstmt = $mysqli->prepare("INSERT INTO $_newteamdb" . 
+		"(naqt, team, teamid, date, tournament, tournid, division) " .
+		"VALUES(?, ?, ?, ?, ?, ?, ?)");
+	$playerstmt = $mysqli->prepare("INSERT INTO $_newplayerdb" . 
+		"(naqt, player, playerid, team, teamid, date, tournament, tournid, division) " .
+		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	$teamstmt->bind_param("isissis", $naqt, $teamname, $teamid, $tdate, $tname, $num, $dname);
+	$playerstmt->bind_param("isisissis", $naqt, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $dname);
+
+	//We start with tournaments found on NAQT's database
+	$naqt = 1;
+	$dname = "NAQT"; //NAQT results combine all phases into one page
+
+	//For whatever reason, there are no NAQT tournaments with id less than 1000
+	for($num = 1000; $num < $numnaqt; $num++)
+	{
+		//Gets the tournament page
+		$tpage = file_get_contents("http://naqt.com/stats/tournament-teams.jsp?tournament_id=$num");
+		
+		//Gets the tournament name. It is followed by Team Standings in <h1> brackets.
+		preg_match("/<h1>(.*) Team Standings<\/h1>/", $tpage, $namematch);
+		$tname = $mysqli->real_escape_string($namematch[1]);
+		echo($namematch[1] . " ($num)<br>");
+
+		//Dates are in <strong> brackets. It has to be able to work with multi-day,
+		//multi-month, and multi-year tournaments. The final word is always the months.
+		preg_match("/Date:  <strong>.*([A-Z][a-z]* [0-9]+, [0-9]{4})<\/strong>/", $tpage, $datematch);
+		$tdate = date("Y-m-d", strtotime($datematch[1]));
+
+		//All team names in each stat report link to their detail page, so use that
+		preg_match_all("/team-performance\.jsp\?team_id=([0-9]+).*?>(.*)<\/a/", $tpage, $teammatch, PREG_SET_ORDER);
+		
+		//For each team we find,store all their data
+		foreach($teammatch as $team)
+		{
+			$teamname = trim($team[2]);
+			$teamid = $team[1];
+			$teamstmt->execute();
+		}
+
+		//Now open the individual stats page
+		$rpage = file_get_contents("http://naqt.com/stats/tournament-individuals.jsp?tournament_id=$num&playoffs=1");
+			
+		//Similarly, individuals are linked to their player detail page.
+		//We have to get their team info as well, though.
+		preg_match_all("/individual-performance\.jsp\?team_member_id=([0-9]+)\">(.*?)<\/a" .
+			".*?team-performance\.jsp\?team_id=([0-9]+).*?>(.*?)<\/a/s", $rpage, $playermatch, PREG_SET_ORDER);
+
+		//Store the indiviual player details
+		foreach($playermatch as $player)
+		{
+			$pname = trim($player[2]);
+			$pid = $player[1];
+			$teamname = trim($player[4]);
+			$teamid = $player[3];
+			$playerstmt->execute();
+		}
+	}
+	
+	//Now to load in HSQB
+	$naqt = 0;
 	for($num = 1; $num < $numtourneys; $num++)
 	{
 		//Gets the tournament page
@@ -42,16 +108,6 @@
 		//Searches for links to stats
 		preg_match_all("/stats\/(.*)\/\">(.*)</", $tpage, $linkmatch, PREG_SET_ORDER);
 		
-		//Prepare the SQL insertions!
-		$teamstmt = $mysqli->prepare("INSERT INTO $_newteamdb" . 
-			"(team, teamid, date, tournament, tournid, division) " .
-			"VALUES(?, ?, ?, ?, ?, ?)");
-		$playerstmt = $mysqli->prepare("INSERT INTO $_newplayerdb" . 
-			"(player, playerid, team, teamid, date, tournament, tournid, division) " .
-			"VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
-		$teamstmt->bind_param("sissis", $teamname, $teamid, $tdate, $tname, $num, $dname);
-		$playerstmt->bind_param("sisissis", $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $dname);
-
 		foreach($linkmatch as $link)
 		{
 			$dname = trim($mysqli->real_escape_string($link[1]));

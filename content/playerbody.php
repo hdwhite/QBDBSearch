@@ -16,7 +16,15 @@
 					{
 						echo("</td></tr>\n");
 						echo("<tr><td>" . date("n/j/Y", strtotime($cur['date'])) . "</td>\n");
-						echo("<td><a href='http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "'>" . $cur['tournament'] . "</a></td>\n");
+						echo("<td><a href='");
+
+						//Link to a different page depending on where the
+						//tournament is being hosted
+						if($cur['naqt'])
+							echo("http://naqt.com/stats/tournament-teams.jsp?tournament_id=" . $cur['tournid']);
+						else
+							echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid']);
+						echo("'>" . $cur['tournament'] . "</a></td>\n");
 						echo("<td>" . $cur['team'] . "</td>\n");
 						echo("<td class='nowrap'>" . $cur['player'] . "</td>\n");
 						echo("<td>");
@@ -24,7 +32,13 @@
 						$oldteam = $cur['team'];
 						$oldplayer = $cur['player'];
 					}
-					echo(" <a href='http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" . $cur['division'] . "/playerdetail/#p" . $cur['playerid'] . "_" . $cur['teamid'] . "'>" . ucfirst(urldecode(str_replace("_", " ", $cur['division']))) . "</a>");
+					echo(" <a href='");
+					if($cur['naqt'])
+						echo("http://naqt.com/stats/tournament-individuals.jsp?playerid=" . $cur['playerid']);
+					else
+						echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" .
+							$cur['division'] . "/playerdetail/#p" . $cur['playerid'] . "_" . $cur['teamid']);
+					echo ("'>" . ucfirst(urldecode(str_replace("_", " ", $cur['division']))) . "</a>");
 				}
 			?>
 		</table>

@@ -37,22 +37,23 @@ class TeamModel extends Model
 		}
 		$where = "WHERE team LIKE ?" .
 			str_repeat(" OR team LIKE ?", count($this->teamlist) - 1);
-		$select = "SELECT team, teamid, date, tournament, tournid, division";
+		$select = "SELECT naqt, team, teamid, date, tournament, tournid, division";
 		$stmt = $this->mysqli->prepare("$select FROM $this->teamdb $where " .
 			"ORDER BY date DESC, tournament ASC, team ASC");
 		$types = str_repeat('s', count($this->teamlist));
 		call_user_func_array(array(&$stmt, 'bind_param'),
 			array_merge((array)$types, $teamqueries));
 		$stmt->execute();
-		$stmt->bind_result($team, $teamid, $date, $tname, $tournid, $division);
+		$stmt->bind_result($naqt, $team, $teamid, $date, $tname, $tournid, $division);
 		$resulttable = array();
 		while($stmt->fetch())
-			$resulttable[] = array("team" => $team,
-								   "teamid" => $teamid,
-								   "date" => $date,
-								   "tournament" => $tname,
-								   "tournid" => $tournid,
-								   "division" => $division);
+			$resulttable[] = array("naqt"		=> $naqt,
+								   "team"		=> $team,
+								   "teamid"		=> $teamid,
+								   "date"		=> $date,
+								   "tournament"	=> $tname,
+								   "tournid"	=> $tournid,
+								   "division"	=> $division);
 		$stmt->close();
 		return $resulttable;
 	}
