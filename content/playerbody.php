@@ -34,7 +34,7 @@
 					}
 					echo(" <a href='");
 					if($cur['naqt'])
-						echo("http://naqt.com/stats/tournament-individuals.jsp?playerid=" . $cur['playerid']);
+						echo("http://naqt.com/stats/individual-performance.jsp?team_member_id=" . $cur['playerid']);
 					else
 						echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" .
 							$cur['division'] . "/playerdetail/#p" . $cur['playerid'] . "_" . $cur['teamid']);
