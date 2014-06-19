@@ -1,7 +1,11 @@
 <html>
 	<head>
 		<STYLE TYPE="text/css">
-			@import url("/harry<?=$css ?>.css");
+			@import url("/harry.css");
+			<?php
+			if($css == "big")
+				echo("@import url(\"/harrybig.css\");");
+			?>
 		</STYLE>
 		<title><?=$title ?></title>
 	</head>
