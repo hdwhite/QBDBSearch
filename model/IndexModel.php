@@ -35,6 +35,10 @@ class IndexModel extends Model
 			"SELECT COUNT(DISTINCT player, team, tournid) AS numplayers FROM $this->playerdb")
 			->fetch_assoc()['numplayers'];
 
-		return array("css" => "", "title" => $this->title, "headertext" => $this->headertext, "numplayers" => $numplayers, "numteams" => $numteams, "numtourneys" => $numtourneys);
+		$newtourneys = $this->mysqli->query("SELECT * FROM $this->newtourneydb ORDER BY date");
+		while($newtourneytable[] = $newtourneys->fetch_assoc());
+		array_pop($newtourneytable);
+
+		return array("css" => "", "title" => $this->title, "headertext" => $this->headertext, "numplayers" => $numplayers, "numteams" => $numteams, "numtourneys" => $numtourneys, "newtourneys" => $newtourneytable);
 	}
 }

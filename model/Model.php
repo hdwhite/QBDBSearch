@@ -14,6 +14,7 @@ abstract class Model
 		require_once($_dbconfig);
 		$this->playerdb = $_playerdb;
 		$this->teamdb = $_teamdb;
+		$this->newtourneydb = $_newtourneydb;
 		$this->mysqli = $mysqli;
 	}
 

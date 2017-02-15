@@ -1,4 +1,6 @@
 <?php
+	ini_set('display_errors', 1);
+	error_reporting(E_ALL);
 	//Gets table names and other database stuff. Actual table names are hidden
 	//in case someone finds a security hole.
 	require_once("dbnames.inc");
@@ -9,23 +11,18 @@
 	$numtourneys = $statarray[1];
 	//There is no easy way to tell how many tournaments are stored on the NAQT
 	//databbase, so that number has to be entered manually
-	$numnaqt = 6000;
+	$numnaqt = 1000;
+	$startnum = 1000;
+	$finishnum = $numnaqt;
 
 	//Ensures that others cannot run the script
-	session_start();
-	if(!isset($_SESSION['id']) || $_SESSION['id'] != 2)
-	{
-		header("Location: http://hdwhite.org/login.php");
-		exit;
-	}
-	
 	require_once($_dbconfig); //connects to MySQL
 
 	//Using new tables allows the database to still be used while this is happening
 	$mysqli->query("DROP TABLE $_newteamdb, $_newplayerdb");
 	$mysqli->query("CREATE TABLE $_newteamdb LIKE $_teamdb");
 	$mysqli->query("CREATE TABLE $_newplayerdb LIKE $_playerdb");
-	echo("Tables created.<br>");
+	echo("Tables created.\n");
 
 	//Prepare the SQL insertions
 	$teamstmt = $mysqli->prepare("INSERT INTO $_newteamdb" . 
@@ -42,19 +39,21 @@
 	$dname = "NAQT"; //NAQT results combine all phases into one page
 
 	//For whatever reason, there are no NAQT tournaments with id less than 1000
-	for($num = 1000; $num < $numnaqt; $num++)
+	for($num = $startnum; $num < $finishnum; $num++)
 	{
 		//Gets the tournament page
-		$tpage = file_get_contents("http://naqt.com/stats/tournament-teams.jsp?tournament_id=$num");
+		if(!$tpage = @file_get_contents("http://naqt.com/stats/tournament-teams.jsp?tournament_id=$num"))
+			continue;
 		
 		//Gets the tournament name. It is followed by Team Standings in <h1> brackets.
-		preg_match("/<h1>(.*) Team Standings<\/h1>/", $tpage, $namematch);
+		if (!preg_match("/<h1 class=\"center\">(.*)<\/h1>/", $tpage, $namematch))
+			continue;
 		$tname = $mysqli->real_escape_string($namematch[1]);
-		echo($namematch[1] . " ($num)<br>");
+		echo($namematch[1] . " ($num)\n");
 
 		//Dates are in <strong> brackets. It has to be able to work with multi-day,
 		//multi-month, and multi-year tournaments. The final word is always the months.
-		preg_match("/Date:  <strong>.*([A-Z][a-z]* [0-9]+, [0-9]{4})<\/strong>/", $tpage, $datematch);
+		preg_match("/(\w+ \d+, \d{4})/", $tpage, $datematch);
 		$tdate = date("Y-m-d", strtotime($datematch[1]));
 
 		//All team names in each stat report link to their detail page, so use that
@@ -86,7 +85,7 @@
 			$playerstmt->execute();
 		}
 	}
-	
+
 	//Now to load in HSQB
 	$naqt = 0;
 	for($num = 1; $num < $numtourneys; $num++)
@@ -95,9 +94,11 @@
 		$tpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num");
 		
 		//Gets the tournament name. It is in the second <H2> bracket on the page.
-		preg_match_all("/<H2>(.*)<\/H2>/", $tpage, $namematch);
+		//If no name is found, the tournament probably doesn't exist.
+		if(preg_match_all("/<H2>(.*)<\/H2>/", $tpage, $namematch) == 1)
+			continue;
 		$tname = $mysqli->real_escape_string($namematch[1][1]);
-		echo($namematch[1][1] . " ($num)<br>");
+		echo($namematch[1][1] . " ($num)\n");
 
 		//Dates are in <H5> brackets. It has to be able to work with multi-day,
 		//multi-month, and multi-year tournaments. The final capitalised word
@@ -106,7 +107,7 @@
 		$tdate = date("Y-m-d", strtotime($datematch[1] . " " . $datematch[2]));
 
 		//Searches for links to stats
-		preg_match_all("/stats\/(.*)\/\">(.*)</", $tpage, $linkmatch, PREG_SET_ORDER);
+		preg_match_all("/stats\/(.*)\/\">(.*)</U", $tpage, $linkmatch, PREG_SET_ORDER);
 		
 		foreach($linkmatch as $link)
 		{
@@ -146,6 +147,13 @@
 	}
 	$teamstmt->close();
 	$playerstmt->close();
+
+	//List all new tournaments since that the last run
+	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
+	$mysqli->query("INSERT INTO $_newtourneydb (tournid, naqt, date, tournament, division) " .
+		"SELECT DISTINCT tournid, naqt, date, tournament, division FROM $_newteamdb " .
+		"WHERE (naqt, team, teamid, date, tournament, tournid, division) NOT IN " .
+		"(SELECT naqt, team, teamid, date, tournament, tournid, division FROM $_teamdb)");
 
 	//Once we're done, create a backup of the current tables and move the new ones into place.
 	$mysqli->query("DROP TABLE $_teamdbbak, $_playerdbbak");
