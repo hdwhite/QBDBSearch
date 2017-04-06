@@ -24,7 +24,7 @@
 							echo("http://naqt.com/stats/tournament-teams.jsp?tournament_id=" . $cur['tournid']);
 						else
 							echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid']);
-						echo("'>" . $cur['tournament'] . "</a></td>\n");
+						echo("'>" . stripslashes($cur['tournament']) . "</a></td>\n");
 						echo("<td>" . $cur['team'] . "</td>\n");
 						echo("<td class='nowrap'>" . $cur['player'] . "</td>\n");
 						echo("<td>");

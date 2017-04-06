@@ -40,7 +40,7 @@
 								$rowtext3 = "'><a href='http://naqt.com/stats/tournament-teams.jsp?tournament_id=";
 							else
 								$rowtext3 = "'><a href='http://hsquizbowl.org/db/tournaments/";
-							$rowtext3 = $rowtext3 . $cur['tournid'] . "'>" . $cur['tournament'] . "</a></td>\n";
+							$rowtext3 = $rowtext3 . $cur['tournid'] . "'>" . stripslashes($cur['tournament']) . "</a></td>\n";
 						}
 						$rowtext3 = $rowtext3 . "<td class='nowrap'>" . $cur['team'] . "</td>\n";
 						$rowtext3 = $rowtext3 . "<td>";

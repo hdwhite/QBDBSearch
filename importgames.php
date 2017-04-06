@@ -11,7 +11,7 @@
 	$numtourneys = $statarray[1];
 	//There is no easy way to tell how many tournaments are stored on the NAQT
 	//databbase, so that number has to be entered manually
-	$numnaqt = 1000;
+	$numnaqt = 10000;
 	$startnum = 1000;
 	$finishnum = $numnaqt;
 
