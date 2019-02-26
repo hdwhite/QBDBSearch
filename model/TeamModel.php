@@ -54,17 +54,17 @@ class TeamModel extends Model
 		}
 		$where = "WHERE team RLIKE ?" .
 			str_repeat(" OR team RLIKE ?", count($this->teamlist) - 1);
-		$select = "SELECT naqt, team, teamid, date, tournament, tournid, division";
+		$select = "SELECT source, team, teamid, date, tournament, tournid, division";
 		$stmt = $this->mysqli->prepare("$select FROM $this->teamdb $where " .
 			"ORDER BY date DESC, tournament ASC, team ASC");
 		$types = str_repeat('s', count($this->teamlist));
 		call_user_func_array(array(&$stmt, 'bind_param'),
 			array_merge((array)$types, $teamqueries));
 		$stmt->execute();
-		$stmt->bind_result($naqt, $team, $teamid, $date, $tname, $tournid, $division);
+		$stmt->bind_result($source, $team, $teamid, $date, $tname, $tournid, $division);
 		$resulttable = array();
 		while($stmt->fetch())
-			$resulttable[] = array("naqt"		=> $naqt,
+			$resulttable[] = array("source"		=> $source,
 								   "team"		=> $team,
 								   "teamid"		=> $teamid,
 								   "date"		=> $date,

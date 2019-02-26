@@ -119,7 +119,7 @@ class PlayerModel extends Model
 		}
 
 		//The SELECT clause
-		$select = "SELECT naqt, player, playerid, team, teamid, date, tournament, tournid, division";
+		$select = "SELECT source, player, playerid, team, teamid, date, tournament, tournid, division";
 
 		//Prepare the query
 		$stmt = $this->mysqli->prepare("$select FROM $this->playerdb $where " .
@@ -132,12 +132,12 @@ class PlayerModel extends Model
 		call_user_func_array(array(&$stmt, 'bind_param'),
 			array_merge((array)$types, $playerqueries, $teamqueries));
 		$stmt->execute();
-		$stmt->bind_result($naqt, $player, $playerid, $team, $teamid, $date, $tname, $tournid, $division);
+		$stmt->bind_result($source, $player, $playerid, $team, $teamid, $date, $tname, $tournid, $division);
 		$resulttable = array();
 
 		//Populates the table with the query results
 		while($stmt->fetch())
-			$resulttable[] = array("naqt"		=> $naqt,
+			$resulttable[] = array("source"		=> $source,
 								   "player"		=> $player,
 								   "playerid"	=> $playerid,
 								   "team"		=> $team,

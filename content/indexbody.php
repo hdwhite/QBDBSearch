@@ -31,7 +31,7 @@
 
 						//Where we're linking to depends on where the
 						//tournament info is stored
-						if(!$cur['naqt'])
+						if(!$cur['source'] == 1)
 							$rowtext3 = "'><a href='http://hsquizbowl.org/db/tournaments/";
 						else
 							$rowtext3 = "'><a href='http://naqt.com/stats/tournament-teams.jsp?tournament_id=";
@@ -40,7 +40,7 @@
 						$oldtourn = $cur['tournament'];
 						$lasttourney = $cur['tournid'];
 					}
-					if($cur['naqt'])
+					if($cur['source'] == 1)
 						$rowtext3 = $rowtext3 . " <a href='http://naqt.com/stats/tournament-teams.jsp?tournament_id=" . $cur['tournid'];
 					else
 						$rowtext3 = $rowtext3 . " <a href='http://hsquizbowl.org/db/tournaments/" .

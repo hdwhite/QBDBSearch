@@ -20,7 +20,7 @@
 
 						//Link to a different page depending on where the
 						//tournament is being hosted
-						if($cur['naqt'])
+						if($cur['source'] == 1)
 							echo("http://naqt.com/stats/tournament/standings.jsp?tournament_id=" . $cur['tournid']);
 						else
 							echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid']);
@@ -33,7 +33,7 @@
 						$oldplayer = $cur['player'];
 					}
 					echo(" <a href='");
-					if($cur['naqt'])
+					if($cur['source'] == 1)
 						echo("http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid']);
 					else
 						echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" .
