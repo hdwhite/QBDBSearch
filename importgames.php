@@ -26,16 +26,16 @@
 
 	//Prepare the SQL insertions
 	$teamstmt = $mysqli->prepare("INSERT INTO $_newteamdb" . 
-		"(naqt, team, teamid, date, tournament, tournid, division) " .
+		"(source, team, teamid, date, tournament, tournid, division) " .
 		"VALUES(?, ?, ?, ?, ?, ?, ?)");
 	$playerstmt = $mysqli->prepare("INSERT INTO $_newplayerdb" . 
-		"(naqt, player, playerid, team, teamid, date, tournament, tournid, division) " .
+		"(source, player, playerid, team, teamid, date, tournament, tournid, division) " .
 		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
-	$teamstmt->bind_param("isissis", $naqt, $teamname, $teamid, $tdate, $tname, $num, $dname);
-	$playerstmt->bind_param("isisissis", $naqt, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $dname);
+	$teamstmt->bind_param("isissis", $source, $teamname, $teamid, $tdate, $tname, $num, $dname);
+	$playerstmt->bind_param("isisissis", $source, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $dname);
 
 	//We start with tournaments found on NAQT's database
-	$naqt = 1;
+	$source = 1;
 	$dname = "NAQT"; //NAQT results combine all phases into one page
 
 	//For whatever reason, there are no NAQT tournaments with id less than 1000
@@ -99,7 +99,7 @@
 	}
 
 	//Now to load in HSQB
-	$naqt = 0;
+	$source = 0;
 	for($num = 1; $num < $numtourneys; $num++)
 	{
 		//Gets the tournament page
@@ -162,10 +162,10 @@
 
 	//List all new tournaments since that the last run
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
-	$mysqli->query("INSERT INTO $_newtourneydb (tournid, naqt, date, tournament, division) " .
-		"SELECT DISTINCT tournid, naqt, date, tournament, division FROM $_newteamdb " .
-		"WHERE (naqt, team, teamid, date, tournament, tournid, division) NOT IN " .
-		"(SELECT naqt, team, teamid, date, tournament, tournid, division FROM $_teamdb)");
+	$mysqli->query("INSERT INTO $_newtourneydb (tournid, source, date, tournament, division) " .
+		"SELECT DISTINCT tournid, source, date, tournament, division FROM $_newteamdb " .
+		"WHERE (source, team, teamid, date, tournament, tournid, division) NOT IN " .
+		"(SELECT source, team, teamid, date, tournament, tournid, division FROM $_teamdb)");
 
 	//Once we're done, create a backup of the current tables and move the new ones into place.
 	$mysqli->query("DROP TABLE $_teamdbbak, $_playerdbbak");
