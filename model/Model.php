@@ -15,6 +15,7 @@ abstract class Model
 		$this->playerdb = $_playerdb;
 		$this->teamdb = $_teamdb;
 		$this->newtourneydb = $_newtourneydb;
+		$this->logdb = $_logdb;
 		$this->mysqli = $mysqli;
 	}
 

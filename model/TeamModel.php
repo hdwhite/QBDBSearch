@@ -5,7 +5,7 @@
 //workings of this file, please refer to PlayerModel.php
 class TeamModel extends Model
 {
-	private $teamlist, $teamsearch;
+	private $teamlist, $teamsearch, $exactteam;
 	public function __construct()
 	{
 		$this->init();
@@ -18,7 +18,21 @@ class TeamModel extends Model
 	}
 	public function setparams($params)
 	{
-		$teamstr = urldecode($params[0]);
+		if (substr($params[0], 0, 3) == "%7E")
+		{
+			$this->exactteam = true;
+			$teamstr = urldecode(substr($params[0], 3));
+		}
+		elseif ($params[0][0] == "~")
+		{
+			$this->exactteam = true;
+			$teamstr = urldecode(substr($params[0], 1));
+		}
+		else
+		{
+			$this->exactteam = false;
+			$teamstr = urldecode($params[0]);
+		}
 		$this->teamsearch = htmlentities($teamstr);
 		$this->title .= $this->teamsearch;
 		$teamstr = strtolower($teamstr);
@@ -32,11 +46,14 @@ class TeamModel extends Model
 		$teamref = array();
 		for($i = 0; $i < count($this->teamlist); $i++)
 		{
-			$teamref[$i] = "%" . $this->teamlist[$i] . "%";
+			if($this->exactteam)
+				$teamref[$i] = "^" . $this->teamlist[$i] . "( .)?$";
+			else
+				$teamref[$i] = ".*" . $this->teamlist[$i] . ".*";
 			$teamqueries[] = &$teamref[$i];
 		}
-		$where = "WHERE team LIKE ?" .
-			str_repeat(" OR team LIKE ?", count($this->teamlist) - 1);
+		$where = "WHERE team RLIKE ?" .
+			str_repeat(" OR team RLIKE ?", count($this->teamlist) - 1);
 		$select = "SELECT naqt, team, teamid, date, tournament, tournid, division";
 		$stmt = $this->mysqli->prepare("$select FROM $this->teamdb $where " .
 			"ORDER BY date DESC, tournament ASC, team ASC");
@@ -64,6 +81,7 @@ class TeamModel extends Model
 					 "title" => $this->title,
 					 "headertext" => $this->headertext,
 					 "teamsearch" => $this->teamsearch,
+					 "exactteam" => $this->exactteam,
 					 "results" => $searchresults);
 	}
 }

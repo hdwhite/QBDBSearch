@@ -11,7 +11,7 @@
 	$numtourneys = $statarray[1];
 	//There is no easy way to tell how many tournaments are stored on the NAQT
 	//databbase, so that number has to be entered manually
-	$numnaqt = 10000;
+	$numnaqt = 12000;
 	$startnum = 1000;
 	$finishnum = $numnaqt;
 
@@ -46,18 +46,30 @@
 			continue;
 		
 		//Gets the tournament name. It is followed by Team Standings in <h1> brackets.
-		if (!preg_match("/<h1 class=\"center\">(.*)<\/h1>/", $tpage, $namematch))
+		if (!preg_match("/<h1>(.*)<\/h1>/", $tpage, $namematch))
+		{
+			echo("$num: Tournament name not found\n");
 			continue;
+		}
 		$tname = $mysqli->real_escape_string($namematch[1]);
-		echo($namematch[1] . " ($num)\n");
+		if ($tname == "Tournament Results")
+		{
+			echo("$num: Tournament does not exist\n");
+			continue;
+		}
 
 		//Dates are in <strong> brackets. It has to be able to work with multi-day,
 		//multi-month, and multi-year tournaments. The final word is always the months.
-		preg_match("/(\w+ \d+, \d{4})/", $tpage, $datematch);
+		if(!preg_match("/(\w+ \d+, \d{4})/", $tpage, $datematch))
+		{
+			echo("$num: Tournament has no results\n");
+			continue;
+		}
+		echo($namematch[1] . " ($num)\n");
 		$tdate = date("Y-m-d", strtotime($datematch[1]));
 
 		//All team names in each stat report link to their detail page, so use that
-		preg_match_all("/team-performance\.jsp\?team_id=([0-9]+).*?>(.*)<\/a/", $tpage, $teammatch, PREG_SET_ORDER);
+		preg_match_all("/stats\/tournament\/team\.jsp\?team_id=([0-9]+?).*>(.*)<\/a/U", $tpage, $teammatch, PREG_SET_ORDER);
 		
 		//For each team we find,store all their data
 		foreach($teammatch as $team)
@@ -68,12 +80,12 @@
 		}
 
 		//Now open the individual stats page
-		$rpage = file_get_contents("http://naqt.com/stats/tournament-individuals.jsp?tournament_id=$num&playoffs=1");
+		$rpage = file_get_contents("http://naqt.com/stats/tournament/individuals.jsp?tournament_id=$num&playoffs=true");
 			
 		//Similarly, individuals are linked to their player detail page.
 		//We have to get their team info as well, though.
-		preg_match_all("/individual-performance\.jsp\?team_member_id=([0-9]+)\">(.*?)<\/a" .
-			".*?team-performance\.jsp\?team_id=([0-9]+).*?>(.*?)<\/a/s", $rpage, $playermatch, PREG_SET_ORDER);
+		preg_match_all("/tournament\/player\.jsp\?team_member_id=([0-9]+)\">(.*?)<\/a" .
+			".*?tournament\/team\.jsp\?team_id=([0-9]+).*?>(.*?)<\/a/s", $rpage, $playermatch, PREG_SET_ORDER);
 
 		//Store the indiviual player details
 		foreach($playermatch as $player)

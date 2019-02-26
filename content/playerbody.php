@@ -21,7 +21,7 @@
 						//Link to a different page depending on where the
 						//tournament is being hosted
 						if($cur['naqt'])
-							echo("http://naqt.com/stats/tournament-teams.jsp?tournament_id=" . $cur['tournid']);
+							echo("http://naqt.com/stats/tournament/standings.jsp?tournament_id=" . $cur['tournid']);
 						else
 							echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid']);
 						echo("'>" . stripslashes($cur['tournament']) . "</a></td>\n");
@@ -34,10 +34,10 @@
 					}
 					echo(" <a href='");
 					if($cur['naqt'])
-						echo("http://naqt.com/stats/individual-performance.jsp?team_member_id=" . $cur['playerid']);
+						echo("http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid']);
 					else
 						echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" .
-							$cur['division'] . "/playerdetail/#p" . $cur['playerid'] . "_" . $cur['teamid']);
+							$cur['division'] . "/teamdetail/#t" . $cur['teamid']);
 					echo ("'>" . ucfirst(urldecode(str_replace("_", " ", $cur['division']))) . "</a>");
 				}
 			?>

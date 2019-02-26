@@ -9,6 +9,7 @@
 				$lasttourney = 0;
 				foreach($results as $cur)
 				{
+//					$cur['team'] = str_replace(" B", " 🅱\u{FE0F}", $cur['team']);
 					//If it's the same team and tournament as before, don't add a
 					//new row. Instead append the phase to the current row
 					if($oldtourn != $cur['tournament'] || $oldteam != $cur['team'])
@@ -37,7 +38,7 @@
 							//Where we're linking to depends on where the
 							//tournament info is stored
 							if($cur['naqt'])
-								$rowtext3 = "'><a href='http://naqt.com/stats/tournament-teams.jsp?tournament_id=";
+								$rowtext3 = "'><a href='http://naqt.com/stats/tournament/standings.jsp?tournament_id=";
 							else
 								$rowtext3 = "'><a href='http://hsquizbowl.org/db/tournaments/";
 							$rowtext3 = $rowtext3 . $cur['tournid'] . "'>" . stripslashes($cur['tournament']) . "</a></td>\n";
@@ -49,7 +50,7 @@
 						$lasttourney = $cur['tournid'];
 					}
 					if($cur['naqt'])
-						$rowtext3 = $rowtext3 . " <a href='http://naqt.com/stats/team-performance.jsp?team_id=" . $cur['teamid'];
+						$rowtext3 = $rowtext3 . " <a href='http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid'];
 					else
 						$rowtext3 = $rowtext3 . " <a href='http://hsquizbowl.org/db/tournaments/" .
 							$cur['tournid'] . "/stats/" . $cur['division'] . "/teamdetail/#t" . $cur['teamid'];

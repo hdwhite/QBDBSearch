@@ -1,5 +1,6 @@
 <html>
 	<head>
+		<meta charset='utf-8'>
 		<STYLE TYPE="text/css">
 			@import url("/harry.css");
 			<?php

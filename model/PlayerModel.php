@@ -2,7 +2,7 @@
 //The Model used for displaying results of the player search
 class PlayerModel extends Model
 {
-	private $playerlist, $playersearch, $teamlist, $teamsearch;
+	private $playerlist, $playersearch, $teamlist, $teamsearch, $exactplayer, $exactteam;
 
 	//Nothing mindblowing here
 	public function __construct()
@@ -19,9 +19,40 @@ class PlayerModel extends Model
 	//Parses the URL to determine the search terms
 	public function setparams($params)
 	{
-		//Decodes the URL into applicable text
-		$playerstr = urldecode($params[0]);
-		$teamstr = urldecode($params[1]);
+		//Decodes the URL into applicable text and check to see if we should use
+		//exact strings
+		if (substr($params[0], 0, 3) == "%7E")
+		{
+			$this->exactplayer = true;
+			$playerstr = urldecode(substr($params[0], 3));
+		}
+		elseif ($params[0][0] == "~")
+		{
+			$this->exactplayer = true;
+			$playerstr = urldecode(substr($params[0], 1));
+		}
+		else
+		{
+			$this->exactplayer = false;
+			$playerstr = urldecode($params[0]);
+		}
+		
+		if (substr($params[1], 0, 3) == "%7E")
+		{
+			$this->exactteam = true;
+			$teamstr = urldecode(substr($params[1], 3));
+		}
+		elseif ($params[1][0] == "~")
+		{
+			$this->exactteam = true;
+			$teamstr = urldecode(substr($params[1], 1));
+		}
+		else
+		{
+			$this->exactteam = false;
+			$teamstr = urldecode($params[1]);
+		}
+
 
 		//Stores the search strings as class variables
 		$this->playersearch = htmlentities($playerstr);
@@ -33,6 +64,9 @@ class PlayerModel extends Model
 		//Case sensitivity doesn't matter for the search
 		$playerstr = strtolower($playerstr);
 		$teamstr = strtolower($teamstr);
+
+		if($playerstr == "mod me myers")
+			$playerstr = "jakob myers";
 
 		//Make wildcards the correct symbol
 		$playerstr = str_replace("*", "%", $playerstr);
@@ -56,13 +90,16 @@ class PlayerModel extends Model
 		$playerref = array();
 		for($i = 0; $i < count($this->playerlist); $i++)
 		{
-			$playerref[$i] = "%" . $this->playerlist[$i] . "%";
+			if ($this->exactplayer)
+				$playerref[$i] = "^" . $this->playerlist[$i] . "$";
+			else
+				$playerref[$i] = ".*" . $this->playerlist[$i] . ".*";
 			$playerqueries[] = &$playerref[$i];
 		}
 
 		//Creates as many LIKE clauses as there are player search strings
-		$where = "WHERE (player LIKE ?" .
-			str_repeat(" OR player LIKE ?", count($this->playerlist) - 1) . ")";
+		$where = "WHERE (player RLIKE ?" .
+			str_repeat(" OR player RLIKE ?", count($this->playerlist) - 1) . ")";
 
 		//Basically do the same thing with teams, but only if a team was searched for
 		$teamqueries = array();
@@ -71,11 +108,14 @@ class PlayerModel extends Model
 			$teamref = array();
 			for($i = 0; $i < count($this->teamlist); $i++)
 			{
-				$teamref[$i] = "%" . $this->teamlist[$i] . "%";
+				if($this->exactteam)
+					$teamref[$i] = "^" . $this->teamlist[$i] . "( .)?$";
+				else
+					$teamref[$i] = ".*" . $this->teamlist[$i] . ".*";
 				$teamqueries[] = &$teamref[$i];
 			}
-			$where .= " AND (team LIKE ?" .
-				str_repeat(" OR team LIKE ?", count($this->teamlist) - 1) . ")";
+			$where .= " AND (team RLIKE ?" .
+				str_repeat(" OR team RLIKE ?", count($this->teamlist) - 1) . ")";
 		}
 
 		//The SELECT clause
@@ -119,6 +159,8 @@ class PlayerModel extends Model
 					 "headertext" => $this->headertext,
 					 "playersearch" => $this->playersearch,
 					 "teamsearch" => $this->teamsearch,
+					 "exactplayer" => $this->exactplayer,
+					 "exactteam" => $this->exactteam,
 					 "results" => $searchresults);
 	}
 }
