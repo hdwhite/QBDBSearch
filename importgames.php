@@ -26,17 +26,70 @@
 
 	//Prepare the SQL insertions
 	$teamstmt = $mysqli->prepare("INSERT INTO $_newteamdb" . 
-		"(source, team, teamid, date, tournament, tournid, division) " .
-		"VALUES(?, ?, ?, ?, ?, ?, ?)");
+		"(source, team, teamid, date, tournament, tournid, division, divisionid) " .
+		"VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
 	$playerstmt = $mysqli->prepare("INSERT INTO $_newplayerdb" . 
-		"(source, player, playerid, team, teamid, date, tournament, tournid, division) " .
-		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
-	$teamstmt->bind_param("isissis", $source, $teamname, $teamid, $tdate, $tname, $num, $dname);
-	$playerstmt->bind_param("isisissis", $source, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $dname);
+		"(source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid) " .
+		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	$teamstmt->bind_param("isssssss", $source, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
+	$playerstmt->bind_param("isssssssss", $source, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
 
-	//We start with tournaments found on NAQT's database
+	//We'll start with Neg5 tournaments
+	$source = 2;
+	//Neg5 uses JSon for its data storage, so let's take advantage of it
+	$neg5data = json_decode(file_get_contents("https://stats.neg5.org/api/t/byDateRange?startDate=1970-01-01T00:00:00.000Z&endDate=2037-12-31T23:59:00.000Z"));
+	foreach($neg5data->result as $neg5tournament)
+	{
+		$num = $neg5tournament->id; // Poor variable name, I know
+		$neg5url = "https://stats.neg5.org/neg5-api/tournaments/$num/";
+		$neg5phases = json_decode(file_get_contents($neg5url . "phases"));
+		$tname = $neg5tournament->name;
+		$tdate = date("Y-m-d", strtotime($neg5tournament->tournament_date));
+		$neg5teamlist = json_decode(file_get_contents($neg5url . "teams"));
+		$teamlist = [];
+
+		foreach($neg5teamlist as $teaminfo)
+		{
+			$teamid = $teaminfo->id;
+			$teamname = $teaminfo->name;
+			$teamlist[$teamid] = $teamname; //We gotta save those for later
+
+			//It seems in most cases we want the phases listed in reverse order
+			foreach(array_reverse($neg5phases) as $curphase)
+			{
+				$phaseid = $curphase->id;
+				$phasename = $curphase->name;
+				$teamstmt->execute();
+			}
+			//Adding in one for the unincluded All Phases
+			$phaseid = "";
+			$phasename = "All Phases";
+			$teamstmt->execute();
+		}
+		
+		$neg5playerlist = json_decode(file_get_contents($neg5url . "players"));
+		foreach($neg5playerlist as $playerinfo)
+		{
+			$pid = $playerinfo->id;
+			$pname = $playerinfo->name;
+			$teamid = $playerinfo->teamId;
+			$teamname = $teamlist[$teamid];
+			foreach(array_reverse($neg5phases) as $curphase)
+			{
+				$phaseid = $curphase->id;
+				$phasename = $curphase->name;
+				$playerstmt->execute();
+			}	
+			$phaseid = "";
+			$phasename = "All Phases";
+			$playerstmt->execute();
+		}
+	}
+
+	//We're now getting tournaments found on NAQT's database
 	$source = 1;
-	$dname = "NAQT"; //NAQT results combine all phases into one page
+	$phasename = "NAQT"; //NAQT results combine all phases into one page
+	$phaseid = "NAQT";
 
 	//For whatever reason, there are no NAQT tournaments with id less than 1000
 	for($num = $startnum; $num < $finishnum; $num++)
@@ -123,7 +176,10 @@
 		
 		foreach($linkmatch as $link)
 		{
-			$dname = trim($mysqli->real_escape_string($link[1]));
+			print_r($link);
+			exit;
+			$phasename = trim($mysqli->real_escape_string($link[2]));
+			$phaseid = trim($mysqli->real_escape_string($link[1]));
 			
 			//Now open each stat report
 			$rpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num/stats/" . $link[1]);
@@ -162,10 +218,10 @@
 
 	//List all new tournaments since that the last run
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
-	$mysqli->query("INSERT INTO $_newtourneydb (tournid, source, date, tournament, division) " .
-		"SELECT DISTINCT tournid, source, date, tournament, division FROM $_newteamdb " .
-		"WHERE (source, team, teamid, date, tournament, tournid, division) NOT IN " .
-		"(SELECT source, team, teamid, date, tournament, tournid, division FROM $_teamdb)");
+	$mysqli->query("INSERT INTO $_newtourneydb (tournid, source, date, tournament, division, divisionid) " .
+		"SELECT DISTINCT tournid, source, date, tournament, division, divisionid FROM $_newteamdb " .
+		"WHERE (source, team, teamid, date, tournament, tournid, division, divisionid) NOT IN " .
+		"(SELECT source, team, teamid, date, tournament, tournid, division, divisionid FROM $_teamdb)");
 
 	//Once we're done, create a backup of the current tables and move the new ones into place.
 	$mysqli->query("DROP TABLE $_teamdbbak, $_playerdbbak");

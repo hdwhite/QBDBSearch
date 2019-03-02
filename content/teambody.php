@@ -37,11 +37,13 @@
 
 							//Where we're linking to depends on where the
 							//tournament info is stored
-							if($cur['source'] == 1)
-								$rowtext3 = "'><a href='http://naqt.com/stats/tournament/standings.jsp?tournament_id=";
+							if($cur['source'] == 2)
+								$rowtext3 = "'><a href='https://stats.neg5.org/t/" . $cur['tournid'] . "/a/team-standings'>";
+							elseif($cur['source'] == 1)
+								$rowtext3 = "'><a href='http://naqt.com/stats/tournament/standings.jsp?tournament_id=" . $cur['tournid'] . "'>";
 							else
-								$rowtext3 = "'><a href='http://hsquizbowl.org/db/tournaments/";
-							$rowtext3 = $rowtext3 . $cur['tournid'] . "'>" . stripslashes($cur['tournament']) . "</a></td>\n";
+								$rowtext3 = "'><a href='http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "'>";
+							$rowtext3 = $rowtext3 . stripslashes($cur['tournament']) . "</a></td>\n";
 						}
 						$rowtext3 = $rowtext3 . "<td class='nowrap'>" . $cur['team'] . "</td>\n";
 						$rowtext3 = $rowtext3 . "<td>";
@@ -49,12 +51,14 @@
 						$oldteam = $cur['team'];
 						$lasttourney = $cur['tournid'];
 					}
-					if($cur['source'] == 1)
+					if($cur['source'] == 2)
+						$rowtext3 = $rowtext3 . " <a href='https://stats.neg5.org/t/" . $cur['tournid'] . "/a/team-full?phase=" . $cur['phaseid'] . "#team_" . $cur['teamid'];
+					elseif($cur['source'] == 1)
 						$rowtext3 = $rowtext3 . " <a href='http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid'];
 					else
 						$rowtext3 = $rowtext3 . " <a href='http://hsquizbowl.org/db/tournaments/" .
-							$cur['tournid'] . "/stats/" . $cur['division'] . "/teamdetail/#t" . $cur['teamid'];
-					$rowtext3 = $rowtext3 . "'>" . ucfirst(urldecode(str_replace("_", " ", $cur['division']))) . "</a>";
+							$cur['tournid'] . "/stats/" . $cur['phaseid'] . "/teamdetail/#t" . $cur['teamid'];
+					$rowtext3 = $rowtext3 . "'>" . ucfirst(urldecode(str_replace("_", " ", $cur['phasename']))) . "</a>";
 				}
 				$rowtext3 = $rowtext3 . "</td></tr>";
 				echo($rowtext1 . $rowspan . $rowtext2 . $rowspan . $rowtext3);

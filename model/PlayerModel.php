@@ -119,7 +119,7 @@ class PlayerModel extends Model
 		}
 
 		//The SELECT clause
-		$select = "SELECT source, player, playerid, team, teamid, date, tournament, tournid, division";
+		$select = "SELECT source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid";
 
 		//Prepare the query
 		$stmt = $this->mysqli->prepare("$select FROM $this->playerdb $where " .
@@ -132,7 +132,7 @@ class PlayerModel extends Model
 		call_user_func_array(array(&$stmt, 'bind_param'),
 			array_merge((array)$types, $playerqueries, $teamqueries));
 		$stmt->execute();
-		$stmt->bind_result($source, $player, $playerid, $team, $teamid, $date, $tname, $tournid, $division);
+		$stmt->bind_result($source, $player, $playerid, $team, $teamid, $date, $tname, $tournid, $phasename, $phaseid);
 		$resulttable = array();
 
 		//Populates the table with the query results
@@ -145,7 +145,8 @@ class PlayerModel extends Model
 								   "date"		=> $date,
 								   "tournament"	=> $tname,
 								   "tournid"	=> $tournid,
-								   "division"	=> $division);
+								   "phasename"	=> $phasename,
+								   "phaseid"	=> $phaseid);
 		$stmt->close();
 		return $resulttable;
 	}

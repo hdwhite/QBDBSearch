@@ -20,7 +20,9 @@
 
 						//Link to a different page depending on where the
 						//tournament is being hosted
-						if($cur['source'] == 1)
+						if($cur['source'] == 2)
+							echo("https://stats.neg5.org/t/" . $cur['tournid'] . "/a/team-standings");
+						elseif($cur['source'] == 1)
 							echo("http://naqt.com/stats/tournament/standings.jsp?tournament_id=" . $cur['tournid']);
 						else
 							echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid']);
@@ -33,12 +35,14 @@
 						$oldplayer = $cur['player'];
 					}
 					echo(" <a href='");
-					if($cur['source'] == 1)
+					if($cur['source'] == 2)
+						echo("http://stats.neg5.org/t/" . $cur['tournid'] . "/a/player-full?phase=" . $cur['phaseid'] . "#player_" . $cur['playerid']);
+					elseif($cur['source'] == 1)
 						echo("http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid']);
 					else
 						echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" .
-							$cur['division'] . "/teamdetail/#t" . $cur['teamid']);
-					echo ("'>" . ucfirst(urldecode(str_replace("_", " ", $cur['division']))) . "</a>");
+							$cur['phaseid'] . "/teamdetail/#t" . $cur['teamid']);
+					echo ("'>" . ucfirst(urldecode(str_replace("_", " ", $cur['phasename']))) . "</a>");
 				}
 			?>
 		</table>

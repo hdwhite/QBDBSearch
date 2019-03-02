@@ -54,14 +54,14 @@ class TeamModel extends Model
 		}
 		$where = "WHERE team RLIKE ?" .
 			str_repeat(" OR team RLIKE ?", count($this->teamlist) - 1);
-		$select = "SELECT source, team, teamid, date, tournament, tournid, division";
+		$select = "SELECT source, team, teamid, date, tournament, tournid, division, divisionid";
 		$stmt = $this->mysqli->prepare("$select FROM $this->teamdb $where " .
 			"ORDER BY date DESC, tournament ASC, team ASC");
 		$types = str_repeat('s', count($this->teamlist));
 		call_user_func_array(array(&$stmt, 'bind_param'),
 			array_merge((array)$types, $teamqueries));
 		$stmt->execute();
-		$stmt->bind_result($source, $team, $teamid, $date, $tname, $tournid, $division);
+		$stmt->bind_result($source, $team, $teamid, $date, $tname, $tournid, $phasename, $phaseid);
 		$resulttable = array();
 		while($stmt->fetch())
 			$resulttable[] = array("source"		=> $source,
@@ -70,7 +70,8 @@ class TeamModel extends Model
 								   "date"		=> $date,
 								   "tournament"	=> $tname,
 								   "tournid"	=> $tournid,
-								   "division"	=> $division);
+								   "phasename"	=> $phasename,
+								   "phaseid"	=> $phaseid);
 		$stmt->close();
 		return $resulttable;
 	}
