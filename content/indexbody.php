@@ -31,20 +31,25 @@
 
 						//Where we're linking to depends on where the
 						//tournament info is stored
-						if(!$cur['source'] == 1)
-							$rowtext3 = "'><a href='http://hsquizbowl.org/db/tournaments/";
+
+						if($cur['source'] == 0)
+							$rowtext3 = "'><a href='http://hsquizbowl.org/db/tournaments/" . $cur['tournid'];
+						elseif($cur['source'] == 1)
+							$rowtext3 = "'><a href='http://naqt.com/stats/tournament-teams.jsp?tournament_id=" . $cur['tournid'];
 						else
-							$rowtext3 = "'><a href='http://naqt.com/stats/tournament-teams.jsp?tournament_id=";
-						$rowtext3 = $rowtext3 . $cur['tournid'] . "'>" . stripslashes($cur['tournament']) . "</a></td>\n";
+							$rowtext3 = "'><a href='https://stats.neg5.org/t/" . $cur['tournid'] . "/a/team-standings";
+						$rowtext3 = $rowtext3 . "'>" . stripslashes($cur['tournament']) . "</a></td>\n";
 						$rowtext3 = $rowtext3 . "<td>";
 						$oldtourn = $cur['tournament'];
 						$lasttourney = $cur['tournid'];
 					}
-					if($cur['source'] == 1)
+					if($cur['tournament'] == 2)
+						$rowtext3 = "'><a href='https://stats.neg5.org/t/" . $cur['tournid'] . "/a?phase=" . $cur['divisionid'];
+					elseif($cur['source'] == 1)
 						$rowtext3 = $rowtext3 . " <a href='http://naqt.com/stats/tournament-teams.jsp?tournament_id=" . $cur['tournid'];
 					else
 						$rowtext3 = $rowtext3 . " <a href='http://hsquizbowl.org/db/tournaments/" .
-							$cur['tournid'] . "/stats/" . $cur['division'] . "/teamdetail";
+							$cur['tournid'] . "/stats/" . $cur['divisionid'] . "/teamdetail";
 					$rowtext3 = $rowtext3 . "'>" . ucfirst(urldecode(str_replace("_", " ", $cur['division']))) . "</a>";
 				}
 				$rowtext3 = $rowtext3 . "</td></tr>";

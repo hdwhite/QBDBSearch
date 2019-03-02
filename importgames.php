@@ -44,6 +44,7 @@
 		$neg5url = "https://stats.neg5.org/neg5-api/tournaments/$num/";
 		$neg5phases = json_decode(file_get_contents($neg5url . "phases"));
 		$tname = $neg5tournament->name;
+		echo("$tname\n");
 		$tdate = date("Y-m-d", strtotime($neg5tournament->tournament_date));
 		$neg5teamlist = json_decode(file_get_contents($neg5url . "teams"));
 		$teamlist = [];
