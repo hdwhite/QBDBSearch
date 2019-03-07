@@ -14,7 +14,6 @@
 	$numnaqt = 12000;
 	$startnum = 1000;
 	$finishnum = $numnaqt;
-
 	//Ensures that others cannot run the script
 	require_once($_dbconfig); //connects to MySQL
 
@@ -177,8 +176,6 @@
 		
 		foreach($linkmatch as $link)
 		{
-			print_r($link);
-			exit;
 			$phasename = trim($mysqli->real_escape_string($link[2]));
 			$phaseid = trim($mysqli->real_escape_string($link[1]));
 			
@@ -216,15 +213,17 @@
 	}
 	$teamstmt->close();
 	$playerstmt->close();
+	echo("All tournaments inserted.\n");
 
-	//List all new tournaments since that the last run
+	//List all tournaments that took place in the past week
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
 	$mysqli->query("INSERT INTO $_newtourneydb (tournid, source, date, tournament, division, divisionid) " .
 		"SELECT DISTINCT tournid, source, date, tournament, division, divisionid FROM $_newteamdb " .
-		"WHERE (source, team, teamid, date, tournament, tournid, division, divisionid) NOT IN " .
-		"(SELECT source, team, teamid, date, tournament, tournid, division, divisionid FROM $_teamdb)");
+		"WHERE date >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND date <= NOW()");
+	echo("New tournaments entered.");
 
 	//Once we're done, create a backup of the current tables and move the new ones into place.
 	$mysqli->query("DROP TABLE $_teamdbbak, $_playerdbbak");
 	$mysqli->query("RENAME TABLE $_teamdb TO $_teamdbbak, $_playerdb TO $_playerdbbak, $_newteamdb TO $_teamdb, $_newplayerdb TO $_playerdb");
+	echo("Script finished.");
 ?>
