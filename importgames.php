@@ -187,7 +187,7 @@
 			$rpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num/stats/" . $link[1]);
 			
 			//All team names in each stat report link to their detail page, so use that
-			preg_match_all("/teamdetail\/#t([0-9]*)>(.*)<\/A/", $rpage, $teammatch, PREG_SET_ORDER);
+			preg_match_all("/teamdetail\/#(\w*)>(.*)<\/[Aa]/", $rpage, $teammatch, PREG_SET_ORDER);
 			
 			//For each team we find,store all their data
 			foreach($teammatch as $team)
@@ -202,15 +202,26 @@
 			
 			//Similarly, individuals are linked to their player detail page.
 			//We have to get their team info as well, though.
-			preg_match_all("/playerdetail\/#p([0-9]*)_([0-9]*)>(.*)<\/A.*\n.*LEFT>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
+			$sqbs = preg_match_all("/playerdetail\/#p([0-9]*)_([0-9]*)>(.*)<\/A.*\n.*LEFT>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
+			//SQBS and Yellowfruit use slightly different HTML, which we have to account for
+			if ($sqbs == 0)
+				preg_match_all("/playerdetail\/#(\w*)-(\w*)>(.*)<\/a.*\n.*left>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
 
 			//Store the indiviual player details
 			foreach($playermatch as $player)
 			{
 				$pname = trim($player[3]);
-				$pid = $player[1];
 				$teamname = trim($player[4]);
-				$teamid = $player[2];
+				if ($sqbs > 0)
+				{
+					$pid = $player[1];
+					$teamid = $player[2];
+				}
+				else
+				{
+					$pid = $player[2];
+					$teamid = $player[1];
+				}
 				$playerstmt->execute();
 			}
 		}
