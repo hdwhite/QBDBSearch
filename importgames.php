@@ -202,26 +202,17 @@
 			
 			//Similarly, individuals are linked to their player detail page.
 			//We have to get their team info as well, though.
-			$sqbs = preg_match_all("/playerdetail\/#p([0-9]*)_([0-9]*)>(.*)<\/A.*\n.*LEFT>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
+			$sqbs = preg_match_all("/playerdetail\/#(p[0-9]*_[0-9]*)>(.*)<\/A.*\n.*LEFT>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
 			//SQBS and Yellowfruit use slightly different HTML, which we have to account for
 			if ($sqbs == 0)
-				preg_match_all("/playerdetail\/#(\w*)-(\w*)>(.*)<\/a.*\n.*left>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
+				preg_match_all("/playerdetail\/#(\w*-\w*)>(.*)<\/a.*\n.*left>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
 
 			//Store the indiviual player details
 			foreach($playermatch as $player)
 			{
-				$pname = trim($player[3]);
-				$teamname = trim($player[4]);
-				if ($sqbs > 0)
-				{
-					$pid = $player[1];
-					$teamid = $player[2];
-				}
-				else
-				{
-					$pid = $player[2];
-					$teamid = $player[1];
-				}
+				$pname = trim($player[2]);
+				$teamname = trim($player[3]);
+				$pid = $player[1];
 				$playerstmt->execute();
 			}
 		}

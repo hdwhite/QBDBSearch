@@ -42,8 +42,8 @@
 						echo("http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid']);
 					else
 						echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" .
-							$cur['phaseid'] . "/teamdetail/#t" . $cur['teamid']);
-					echo ("'>" . ucfirst(urldecode(str_replace("_", " ", $cur['phasename']))) . "</a>");
+							$cur['phaseid'] . "/playerdetail/#" . $cur['playerid']);
+					echo ("'>" . $cur['phasename'] . "</a>");
 				}
 			?>
 		</table>

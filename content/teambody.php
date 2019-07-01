@@ -57,7 +57,7 @@
 						$rowtext3 = $rowtext3 . " <a href='http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid'];
 					else
 						$rowtext3 = $rowtext3 . " <a href='http://hsquizbowl.org/db/tournaments/" .
-							$cur['tournid'] . "/stats/" . $cur['phaseid'] . "/teamdetail/#t" . $cur['teamid'];
+							$cur['tournid'] . "/stats/" . $cur['phaseid'];
 					$rowtext3 = $rowtext3 . "'>" . ucfirst(urldecode(str_replace("_", " ", $cur['phasename']))) . "</a>";
 				}
 				$rowtext3 = $rowtext3 . "</td></tr>";
