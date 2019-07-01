@@ -67,6 +67,8 @@ class PlayerModel extends Model
 
 		if($playerstr == "mod me myers")
 			$playerstr = "jakob myers";
+		if($playerstr == "william taylor")
+			$playerstr = "william golden";
 
 		//Make wildcards the correct symbol
 		$playerstr = str_replace("*", "%", $playerstr);

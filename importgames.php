@@ -86,6 +86,9 @@
 		}
 	}
 
+
+/*
+	Parsing NAQT tournaments are disabled for the time being
 	//We're now getting tournaments found on NAQT's database
 	$source = 1;
 	$phasename = "NAQT"; //NAQT results combine all phases into one page
@@ -150,6 +153,7 @@
 			$playerstmt->execute();
 		}
 	}
+*/
 
 	//Now to load in HSQB
 	$source = 0;

@@ -9,7 +9,7 @@
 				$lasttourney = 0;
 				foreach($results as $cur)
 				{
-//					$cur['team'] = str_replace(" B", " 🅱\u{FE0F}", $cur['team']);
+				//	$cur['team'] = str_replace(" B", " 🅱\u{FE0F}", $cur['team']);
 					//If it's the same team and tournament as before, don't add a
 					//new row. Instead append the phase to the current row
 					if($oldtourn != $cur['tournament'] || $oldteam != $cur['team'])

@@ -23,8 +23,8 @@ class IndexModel extends Model
 	{
 		//Gets the number of tournaments and teams stored in the database
 		$temp = $this->mysqli->query(
-			"SELECT COUNT(DISTINCT tournid) AS numtourneys, " .
-			"COUNT(DISTINCT team, tournid) AS numteams " .
+			"SELECT COUNT(DISTINCT tournid, source) AS numtourneys, " .
+			"COUNT(DISTINCT team, tournid, source) AS numteams " .
 			"FROM $this->teamdb")
 			->fetch_assoc();
 		$numtourneys = $temp['numtourneys'];
@@ -32,7 +32,7 @@ class IndexModel extends Model
 
 		//Gets the number of players stored in the database
 		$numplayers = $this->mysqli->query(
-			"SELECT COUNT(DISTINCT player, team, tournid) AS numplayers FROM $this->playerdb")
+			"SELECT COUNT(DISTINCT player, team, tournid, source) AS numplayers FROM $this->playerdb")
 			->fetch_assoc()['numplayers'];
 
 		$newtourneys = $this->mysqli->query("SELECT * FROM $this->newtourneydb ORDER BY date");
