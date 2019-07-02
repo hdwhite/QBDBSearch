@@ -21,6 +21,9 @@
 	$mysqli->query("DROP TABLE $_newteamdb, $_newplayerdb");
 	$mysqli->query("CREATE TABLE $_newteamdb LIKE $_teamdb");
 	$mysqli->query("CREATE TABLE $_newplayerdb LIKE $_playerdb");
+	//We can keep NAQT data
+	$mysqli->query("INSERT $_newteamdb SELECT * FROM $_teamdb WHERE source = 1");
+	$mysqli->query("INSERT $_newplayerdb SELECT * FROM $_playerdb WHERE source = 1");
 	echo("Tables created.\n");
 
 	//Prepare the SQL insertions
@@ -87,73 +90,62 @@
 	}
 
 
-/*
-	Parsing NAQT tournaments are disabled for the time being
+
 	//We're now getting tournaments found on NAQT's database
 	$source = 1;
-	$phasename = "NAQT"; //NAQT results combine all phases into one page
-	$phaseid = "NAQT";
+	//Get the last month's worth of data from the NAQT API
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array("Authorization: Bearer $_apikey"));
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_URL, "https://www.naqt.com/api/stats/AvailableResults?start=" . date("Y-m-d", strtotime("-4 weeks")) . "end=" . date("Y-m-d"));
+	$naqtdata = json_decode(curl_exec($ch), true);
+	//We're limited to one request per second
+	sleep(1);
 
-	//For whatever reason, there are no NAQT tournaments with id less than 1000
-	for($num = $startnum; $num < $finishnum; $num++)
+	foreach($naqtdata as $tournament)
 	{
-		//Gets the tournament page
-		if(!$tpage = @file_get_contents("http://naqt.com/stats/tournament-teams.jsp?tournament_id=$num"))
-			continue;
-		
-		//Gets the tournament name. It is followed by Team Standings in <h1> brackets.
-		if (!preg_match("/<h1>(.*)<\/h1>/", $tpage, $namematch))
-		{
-			echo("$num: Tournament name not found\n");
-			continue;
-		}
-		$tname = $mysqli->real_escape_string($namematch[1]);
-		if ($tname == "Tournament Results")
-		{
-			echo("$num: Tournament does not exist\n");
-			continue;
-		}
+		$num = $tournament['tournament_id'];
+		//Delete old tournaments that we're going to replace
+		$mysqli->query("DELETE FROM $_newteamdb WHERE source=1 AND tournid=$num");
+		$mysqli->query("DELETE FROM $_newplayerdb WHERE source=1 AND tournid=$num");
 
-		//Dates are in <strong> brackets. It has to be able to work with multi-day,
-		//multi-month, and multi-year tournaments. The final word is always the months.
-		if(!preg_match("/(\w+ \d+, \d{4})/", $tpage, $datematch))
-		{
-			echo("$num: Tournament has no results\n");
-			continue;
-		}
-		echo($namematch[1] . " ($num)\n");
-		$tdate = date("Y-m-d", strtotime($datematch[1]));
+		$tname = $tournament['name'];
+		$tdate = $tournament['end'];
+		$standingsurl = $tournament['results_url'];
+		$updated = $tournament['results_updated'];
+		echo("$num $tname\n");
 
-		//All team names in each stat report link to their detail page, so use that
-		preg_match_all("/stats\/tournament\/team\.jsp\?team_id=([0-9]+?).*>(.*)<\/a/U", $tpage, $teammatch, PREG_SET_ORDER);
-		
-		//For each team we find,store all their data
-		foreach($teammatch as $team)
+		foreach($tournament['divisions'] as $division)
 		{
-			$teamname = trim($team[2]);
-			$teamid = $team[1];
-			$teamstmt->execute();
-		}
+			$phaseid = $division['division_id'];
+			$phasename = $division['name'];
+			$level = $division['primary_audience'];
+			//Get data for each individual division of a tournament
+			curl_setopt($ch, CURLOPT_URL, "https://www.naqt.com/api/stats/TournamentResults?tournament_id=$num&division_id=$phaseid");
+			$ddata = json_decode(curl_exec($ch), true);
+			sleep(1);
 
-		//Now open the individual stats page
-		$rpage = file_get_contents("http://naqt.com/stats/tournament/individuals.jsp?tournament_id=$num&playoffs=true");
-			
-		//Similarly, individuals are linked to their player detail page.
-		//We have to get their team info as well, though.
-		preg_match_all("/tournament\/player\.jsp\?team_member_id=([0-9]+)\">(.*?)<\/a" .
-			".*?tournament\/team\.jsp\?team_id=([0-9]+).*?>(.*?)<\/a/s", $rpage, $playermatch, PREG_SET_ORDER);
-
-		//Store the indiviual player details
-		foreach($playermatch as $player)
-		{
-			$pname = trim($player[2]);
-			$pid = $player[1];
-			$teamname = trim($player[4]);
-			$teamid = $player[3];
-			$playerstmt->execute();
+			foreach($ddata['objects'] as $index => $schooldata)
+			{
+				//The first element is registration data; the rest are schools
+				if ($index == 0)
+					continue;
+				foreach($schooldata['teams'] as $teamdata)
+				{
+					$teamid = $teamdata['team_id'];
+					$teamname = $teamdata['name'];
+					$teamstmt->execute();
+					foreach($teamdata['players'] as $playerdata)
+					{
+						$pid = $playerdata['team_member_id'];
+						$pname = $playerdata['name'];
+						$playerstmt->execute();
+					}
+				}
+			}
 		}
 	}
-*/
+	curl_close($ch);
 
 	//Now to load in HSQB
 	$source = 0;
