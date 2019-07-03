@@ -80,4 +80,16 @@
 	$teamstmt->close();
 	$playerstmt->close();
 	echo("All tournaments inserted.");
+	
+	//List all tournaments that took place in the past week
+	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
+	$mysqli->query("INSERT INTO $_newtourneydb (tournid, source, date, tournament, division, divisionid) " .
+		"SELECT DISTINCT tournid, source, date, tournament, division, divisionid FROM $_newteamdb " .
+		"WHERE date >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND date <= NOW()");
+	echo("New tournaments entered.\n");
+
+	//Once we're done, create a backup of the current tables and move the new ones into place.
+	$mysqli->query("DROP TABLE $_teamdbbak, $_playerdbbak");
+	$mysqli->query("RENAME TABLE $_teamdb TO $_teamdbbak, $_playerdb TO $_playerdbbak, $_newteamdb TO $_teamdb, $_newplayerdb TO $_playerdb");
+	echo("Script finished.\n");
 ?>

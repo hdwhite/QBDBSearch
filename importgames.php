@@ -97,7 +97,7 @@
 	$ch = curl_init();
 	curl_setopt($ch, CURLOPT_HTTPHEADER, array("Authorization: Bearer $_apikey"));
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	curl_setopt($ch, CURLOPT_URL, "https://www.naqt.com/api/stats/AvailableResults?start=" . date("Y-m-d", strtotime("-4 weeks")) . "end=" . date("Y-m-d"));
+	curl_setopt($ch, CURLOPT_URL, "https://www.naqt.com/api/stats/AvailableResults?start=" . date("Y-m-d", strtotime("-4 weeks")) . "&end=" . date("Y-m-d"));
 	$naqtdata = json_decode(curl_exec($ch), true);
 	//We're limited to one request per second
 	sleep(1);
@@ -218,10 +218,10 @@
 	$mysqli->query("INSERT INTO $_newtourneydb (tournid, source, date, tournament, division, divisionid) " .
 		"SELECT DISTINCT tournid, source, date, tournament, division, divisionid FROM $_newteamdb " .
 		"WHERE date >= DATE_SUB(NOW(), INTERVAL 1 WEEK) AND date <= NOW()");
-	echo("New tournaments entered.");
+	echo("New tournaments entered.\n");
 
 	//Once we're done, create a backup of the current tables and move the new ones into place.
 	$mysqli->query("DROP TABLE $_teamdbbak, $_playerdbbak");
 	$mysqli->query("RENAME TABLE $_teamdb TO $_teamdbbak, $_playerdb TO $_playerdbbak, $_newteamdb TO $_teamdb, $_newplayerdb TO $_playerdb");
-	echo("Script finished.");
+	echo("Script finished.\n");
 ?>
