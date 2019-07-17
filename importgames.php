@@ -149,7 +149,7 @@
 
 	//Now to load in HSQB
 	$source = 0;
-	for($num = 1; $num < $numtourneys; $num++)
+	for($num = 1; $num <= $numtourneys; $num++)
 	{
 		//Gets the tournament page
 		$tpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num");
