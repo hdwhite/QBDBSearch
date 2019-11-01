@@ -22,8 +22,8 @@
 	$mysqli->query("CREATE TABLE $_newteamdb LIKE $_teamdb");
 	$mysqli->query("CREATE TABLE $_newplayerdb LIKE $_playerdb");
 	//We can keep NAQT data
-	$mysqli->query("INSERT $_newteamdb SELECT * FROM $_teamdb WHERE source = 1");
-	$mysqli->query("INSERT $_newplayerdb SELECT * FROM $_playerdb WHERE source = 1");
+	$mysqli->query("INSERT INTO $_newteamdb SELECT * FROM $_teamdb WHERE source = 1");
+	$mysqli->query("INSERT INTO $_newplayerdb SELECT * FROM $_playerdb WHERE source = 1");
 	echo("Tables created.\n");
 
 	//Prepare the SQL insertions

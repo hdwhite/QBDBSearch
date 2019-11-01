@@ -16,7 +16,7 @@
 					{
 						//If the tournament is the same but not the team, add a
 						//new row, but keep the tournament name in one tall cell
-						if($cur['tournid'] == $lasttourney)
+						if($cur['tournid'] === $lasttourney)
 						{
 							$rowspan++;
 							$rowtext3 = $rowtext3 . "</td></tr>\n";
@@ -25,7 +25,7 @@
 						else
 						{
 							//Deals with an edge case
-							if($lasttourney > 0)
+							if($lasttourney !== 0)
 							{
 								$rowtext3 = $rowtext3 . "</td></tr>";
 								echo($rowtext1 . $rowspan . $rowtext2 . $rowspan . $rowtext3);
