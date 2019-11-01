@@ -204,6 +204,9 @@
 			{
 				$pname = trim($player[2]);
 				$teamname = trim($player[3]);
+				//Some Neg5 reports have the team name be a link
+				if (preg_match("/<a.*>(.*)<\/a>/", $teamname, $trimmedteam))
+					$teamname = $trimmedteam[1];
 				$pid = $player[1];
 				$playerstmt->execute();
 			}
