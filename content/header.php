@@ -1,5 +1,6 @@
 <html>
 	<head>
+		<?php require_once($_SERVER['DOCUMENT_ROOT'] . "/analytics.php"); ?>
 		<meta charset='utf-8'>
 		<STYLE TYPE="text/css">
 			@import url("/harry.css");
@@ -14,5 +15,5 @@
 		<div id="container">
 			<div id="header">
 				<h2><?=$headertext ?></h2>
-				<?php $sel=1; include("../header.php"); ?>
+				<?php include("header.php"); ?>
 			</div>
