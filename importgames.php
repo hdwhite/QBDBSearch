@@ -197,16 +197,15 @@
 			$sqbs = preg_match_all("/playerdetail\/#(p[0-9]*_[0-9]*)>(.*)<\/A.*\n.*LEFT>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
 			//SQBS and Yellowfruit use slightly different HTML, which we have to account for
 			if ($sqbs == 0)
-				preg_match_all("/playerdetail\/#(\w*-\w*)>(.*)<\/a.*\n.*left>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
+				preg_match_all("/playerdetail\/#(\w*-\w*)>(.*)<\/a.*left><a.*>(.+)<\/a><\/td/Us", $rpage, $playermatch, PREG_SET_ORDER);
 
+			if (count($playermatch) == 0 && $sqbs == 0)
+				echo("No player stats were found for this Yellowfruit tournament.\n");
 			//Store the indiviual player details
 			foreach($playermatch as $player)
 			{
 				$pname = trim($player[2]);
 				$teamname = trim($player[3]);
-				//Some Neg5 reports have the team name be a link
-				if (preg_match("/<a.*>(.*)<\/a>/", $teamname, $trimmedteam))
-					$teamname = $trimmedteam[1];
 				$pid = $player[1];
 				$playerstmt->execute();
 			}
@@ -215,6 +214,8 @@
 	$teamstmt->close();
 	$playerstmt->close();
 	echo("All tournaments inserted.\n");
+
+	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'Alex Malone', 'Sasha Malone') WHERE date < '2016-01-01'");
 
 	//List all tournaments that took place in the past week
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");

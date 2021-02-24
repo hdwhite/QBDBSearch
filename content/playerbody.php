@@ -9,7 +9,7 @@
 				$oldplayer = "";
 				foreach($results as $cur)
 				{
-				//	$cur['team'] = str_replace(" B", " 🅱\u{FE0F}", $cur['team']);
+					//$cur['team'] = str_replace(" B", " 🅱\u{FE0F}", $cur['team']);
 					//If the tournament and the player are both the same as before,
 					//don't add a new row and instead add a link to the next phase
 					//in the same row.
