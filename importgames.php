@@ -215,7 +215,11 @@
 	$playerstmt->close();
 	echo("All tournaments inserted.\n");
 
-	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'Alex Malone', 'Sasha Malone') WHERE date < '2016-01-01'");
+//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'Alex Malone', 'Sasha Malone') WHERE date < '2016-01-01'");
+//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John Phipps', 'Jimena Sarapura-Phipps') WHERE date < '2021-01-01'");
+//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'JOHN PHIPPS', 'Jimena Sarapura-Phipps') WHERE tournid=5851");
+//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John P', 'Jimena Sarapura-Phipps') WHERE tournid=3217");
+//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John', 'Jimena') WHERE team='Darien A' AND date < '2018-01-01'");
 
 	//List all tournaments that took place in the past week
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
