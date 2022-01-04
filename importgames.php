@@ -40,6 +40,9 @@
 	$teamstmt->bind_param("isssssss", $source, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
 	$playerstmt->bind_param("isssssssss", $source, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
 
+
+//Neg5's API is down, so those are being skipped
+/*
 	//We'll start with Neg5 tournaments
 	$source = 2;
 	//Neg5 uses JSon for its data storage, so let's take advantage of it
@@ -92,7 +95,7 @@
 			$playerstmt->execute();
 		}
 	}
-
+*/
 
 
 	//We're now getting tournaments found on NAQT's database
