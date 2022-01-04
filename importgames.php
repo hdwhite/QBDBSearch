@@ -22,8 +22,12 @@
 	$mysqli->query("CREATE TABLE $_newteamdb LIKE $_teamdb");
 	$mysqli->query("CREATE TABLE $_newplayerdb LIKE $_playerdb");
 	//We can keep NAQT data
-	$mysqli->query("INSERT INTO $_newteamdb SELECT * FROM $_teamdb WHERE source = 1");
-	$mysqli->query("INSERT INTO $_newplayerdb SELECT * FROM $_playerdb WHERE source = 1");
+	$mysqli->query("INSERT INTO $_newteamdb " .
+		"(source, team, teamid, date, tournament, tournid, division, divisionid) " .
+		"SELECT source, team, teamid, date, tournament, tournid, division, divisionid FROM $_teamdb WHERE source = 1");
+	$mysqli->query("INSERT INTO $_newplayerdb " .
+		"(source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid) " .
+	 	"SELECT source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid FROM $_playerdb WHERE source = 1");
 	echo("Tables created.\n");
 
 	//Prepare the SQL insertions
@@ -164,7 +168,8 @@
 		//Dates are in <H5> brackets. It has to be able to work with multi-day,
 		//multi-month, and multi-year tournaments. The final capitalised word
 		//is always the month, and the final groupings of numbers are the date and year.
-		preg_match("/<H5>.*([A-Z][a-z]*) .*([0-9]{2}, [0-9]{4})<\/H5>/", $tpage, $datematch);
+		if (preg_match("/<H5>.*([A-Z][a-z]*) .*([0-9]{2}, [0-9]{4})<\/H5>/", $tpage, $datematch) == 0)
+			echo("Date not found for tournament $num\n");
 		$tdate = date("Y-m-d", strtotime($datematch[1] . " " . $datematch[2]));
 
 		//Searches for links to stats
@@ -220,6 +225,7 @@
 //	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'JOHN PHIPPS', 'Jimena Sarapura-Phipps') WHERE tournid=5851");
 //	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John P', 'Jimena Sarapura-Phipps') WHERE tournid=3217");
 //	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John', 'Jimena') WHERE team='Darien A' AND date < '2018-01-01'");
+	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'Emily', 'Em') WHERE team LIKE '%Salem%' AND date > '2015-01-01'");
 
 	//List all tournaments that took place in the past week
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
