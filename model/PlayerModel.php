@@ -65,13 +65,6 @@ class PlayerModel extends Model
 		$playerstr = strtolower($playerstr);
 		$teamstr = strtolower($teamstr);
 
-		if($playerstr == "mod me myers")
-			$playerstr = "jakob myers";
-		if($playerstr == "william taylor")
-			$playerstr = "william golden";
-		if($playerstr == "200px 200px")
-			$playerstr = "dylan minarik";
-
 		//Make wildcards the correct symbol
 		$playerstr = str_replace("*", "%", $playerstr);
 		$teamstr = str_replace("*", "%", $teamstr);
@@ -123,7 +116,7 @@ class PlayerModel extends Model
 		}
 
 		//The SELECT clause
-		$select = "SELECT source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid";
+		$select = "SELECT source, player, playerid, team, date, tournament, tournid, division, divisionid";
 
 		//Prepare the query
 		$stmt = $this->mysqli->prepare("$select FROM $this->playerdb $where " .
@@ -136,7 +129,7 @@ class PlayerModel extends Model
 		call_user_func_array(array(&$stmt, 'bind_param'),
 			array_merge((array)$types, $playerqueries, $teamqueries));
 		$stmt->execute();
-		$stmt->bind_result($source, $player, $playerid, $team, $teamid, $date, $tname, $tournid, $phasename, $phaseid);
+		$stmt->bind_result($source, $player, $playerid, $team, $date, $tname, $tournid, $phasename, $phaseid);
 		$resulttable = array();
 
 		//Populates the table with the query results
@@ -145,7 +138,6 @@ class PlayerModel extends Model
 								   "player"		=> $player,
 								   "playerid"	=> $playerid,
 								   "team"		=> $team,
-								   "teamid"		=> $teamid,
 								   "date"		=> $date,
 								   "tournament"	=> $tname,
 								   "tournid"	=> $tournid,

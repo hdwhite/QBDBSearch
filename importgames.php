@@ -18,7 +18,7 @@
 	require_once($_dbconfig); //connects to MySQL
 
 	//Using new tables allows the database to still be used while this is happening
-	$mysqli->query("DROP TABLE $_newteamdb, $_newplayerdb");
+	$mysqli->query("DROP TABLE IF EXISTS $_newteamdb, $_newplayerdb");
 	$mysqli->query("CREATE TABLE $_newteamdb LIKE $_teamdb");
 	$mysqli->query("CREATE TABLE $_newplayerdb LIKE $_playerdb");
 	//We can keep NAQT data
@@ -26,8 +26,8 @@
 		"(source, team, teamid, date, tournament, tournid, division, divisionid) " .
 		"SELECT source, team, teamid, date, tournament, tournid, division, divisionid FROM $_teamdb WHERE source = 1");
 	$mysqli->query("INSERT INTO $_newplayerdb " .
-		"(source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid) " .
-	 	"SELECT source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid FROM $_playerdb WHERE source = 1");
+		"(source, player, playerid, team, date, tournament, tournid, division, divisionid) " .
+	 	"SELECT source, player, playerid, team, date, tournament, tournid, division, divisionid FROM $_playerdb WHERE source = 1");
 	echo("Tables created.\n");
 
 	//Prepare the SQL insertions
@@ -35,10 +35,10 @@
 		"(source, team, teamid, date, tournament, tournid, division, divisionid) " .
 		"VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
 	$playerstmt = $mysqli->prepare("INSERT INTO $_newplayerdb" . 
-		"(source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid) " .
-		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-	$teamstmt->bind_param("isssssss", $source, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
-	$playerstmt->bind_param("isssssssss", $source, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
+		"(source, player, playerid, team, date, tournament, tournid, division, divisionid) " .
+		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	$teamstmt->bind_param("issssiss", $source, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
+	$playerstmt->bind_param("isssssiss", $source, $pname, $pid, $teamname, $tdate, $tname, $num, $phasename, $phaseid);
 
 
 //Neg5's API is down, so those are being skipped
@@ -111,6 +111,8 @@
 
 	foreach($naqtdata as $tournament)
 	{
+		if(strtolower($tournament['scoring_type']) == "buzzword")
+			continue;
 		$num = $tournament['tournament_id'];
 		//Delete old tournaments that we're going to replace
 		$mysqli->query("DELETE FROM $_newteamdb WHERE source=1 AND tournid=$num");
@@ -222,13 +224,6 @@
 	$teamstmt->close();
 	$playerstmt->close();
 	echo("All tournaments inserted.\n");
-
-//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'Alex Malone', 'Sasha Malone') WHERE date < '2016-01-01'");
-//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John Phipps', 'Jimena Sarapura-Phipps') WHERE date < '2021-01-01'");
-//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'JOHN PHIPPS', 'Jimena Sarapura-Phipps') WHERE tournid=5851");
-//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John P', 'Jimena Sarapura-Phipps') WHERE tournid=3217");
-//	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'John', 'Jimena') WHERE team='Darien A' AND date < '2018-01-01'");
-	$mysqli->query("UPDATE $_newplayerdb SET player=REPLACE(player, 'Emily', 'Em') WHERE team LIKE '%Salem%' AND date > '2015-01-01'");
 
 	//List all tournaments that took place in the past week
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
