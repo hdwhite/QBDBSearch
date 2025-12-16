@@ -39,7 +39,7 @@
 					if($cur['source'] == 2)
 						echo("http://stats.neg5.org/t/" . $cur['tournid'] . "/a/player-full?phase=" . $cur['phaseid'] . "#player_" . $cur['playerid']);
 					elseif($cur['source'] == 1)
-						echo("http://naqt.com/stats/tournament/team.jsp?team_id=" . $cur['teamid']);
+						echo("http://naqt.com/stats/tournament/player.jsp?team_member_id=" . $cur['playerid']);
 					else
 						echo("http://hsquizbowl.org/db/tournaments/" . $cur['tournid'] . "/stats/" .
 							$cur['phaseid'] . "/playerdetail/#" . $cur['playerid']);

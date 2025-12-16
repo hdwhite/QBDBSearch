@@ -225,6 +225,20 @@
 	$playerstmt->close();
 	echo("All tournaments inserted.\n");
 
+	//Calculate database stats
+	$temp = $mysqli->query(
+			"SELECT COUNT(DISTINCT tournid, source) AS numtourneys, " .
+			"COUNT(DISTINCT team, tournid, source) AS numteams " .
+			"FROM $_newteamdb")
+			->fetch_assoc();
+	$mysqli->query("UPDATE $_statsdb SET number=" . $temp['numtourneys'] . " WHERE statistic=\"tournaments\"");
+	$mysqli->query("UPDATE $_statsdb SET number=" . $temp['numteams'] . " WHERE statistic=\"teams\"");
+
+	$numplayers = $mysqli->query(
+			"SELECT COUNT(DISTINCT player, team, tournid, source) AS numplayers FROM $_newplayerdb")
+			->fetch_assoc()['numplayers'];
+	$mysqli->query("UPDATE $_statsdb SET number=$numplayers WHERE statistic=\"players\"");
+
 	//List all tournaments that took place in the past week
 	$mysqli->query("TRUNCATE TABLE $_newtourneydb");
 	$mysqli->query("INSERT INTO $_newtourneydb (tournid, source, date, tournament, division, divisionid) " .

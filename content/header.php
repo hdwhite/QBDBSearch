@@ -9,6 +9,16 @@
 				echo("@import url(\"/harrybig.css\");");
 			?>
 		</STYLE>
+		<script language="javascript">
+			function toggle(targetId)
+			{
+				target = document.getElementById(targetId);
+				if (target.style.display == "none")
+					target.style.display="";
+				else
+					target.style.display="none";
+			}
+		</script>
 		<title><?=$title ?></title>
 	</head>
 	<body>

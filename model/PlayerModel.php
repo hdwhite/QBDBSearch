@@ -1,8 +1,8 @@
-<?php
+<?php 
 //The Model used for displaying results of the player search
 class PlayerModel extends Model
 {
-	private $playerlist, $playersearch, $teamlist, $teamsearch, $exactplayer, $exactteam;
+	private $playersearch, $teamsearch;
 
 	//Nothing mindblowing here
 	public function __construct()
@@ -19,115 +19,40 @@ class PlayerModel extends Model
 	//Parses the URL to determine the search terms
 	public function setparams($params)
 	{
-		//Decodes the URL into applicable text and check to see if we should use
-		//exact strings
-		if (substr($params[0], 0, 3) == "%7E")
-		{
-			$this->exactplayer = true;
-			$playerstr = urldecode(substr($params[0], 3));
-		}
-		elseif ($params[0][0] == "~")
-		{
-			$this->exactplayer = true;
-			$playerstr = urldecode(substr($params[0], 1));
-		}
-		else
-		{
-			$this->exactplayer = false;
-			$playerstr = urldecode($params[0]);
-		}
-		
-		if (substr($params[1], 0, 3) == "%7E")
-		{
-			$this->exactteam = true;
-			$teamstr = urldecode(substr($params[1], 3));
-		}
-		elseif ($params[1][0] == "~")
-		{
-			$this->exactteam = true;
-			$teamstr = urldecode(substr($params[1], 1));
-		}
-		else
-		{
-			$this->exactteam = false;
-			$teamstr = urldecode($params[1]);
-		}
-
-
-		//Stores the search strings as class variables
-		$this->playersearch = htmlentities($playerstr);
-		$this->teamsearch = htmlentities($teamstr);
+		//Decodes the URL into applicable text
+		$playerstr = urldecode($params[0]);
+		$teamstr = isset($params[1]) ? urldecode($params[1]) : "";
 
 		//Appends the page title
-		$this->title .= $this->playersearch;
+		$this->title .= htmlentities($playerstr);
 
-		//Case sensitivity doesn't matter for the search
-		$playerstr = strtolower($playerstr);
-		$teamstr = strtolower($teamstr);
-
-		//Make wildcards the correct symbol
-		$playerstr = str_replace("*", "%", $playerstr);
-		$teamstr = str_replace("*", "%", $teamstr);
-
-		//Allows people to search for multiple queries, and stores search strings
-		//as arrays
-		$this->playerlist = explode(" or ", $playerstr);
-		$this->teamlist = explode(" or ", $teamstr);
+		//Stores the search strings as class variables
+		$this->playersearch = $playerstr;
+		$this->teamsearch = $teamstr;
 	}
 
 	//Searches the database and returns an array of matches
 	protected function search()
 	{
-		//Don't return anything if the query is too short
-		if(max(array_map('strlen', $this->playerlist)) < 2) return array();
-
-		//Puts wildcards on each side of the search strings and turns them into references
-		//For some reason, references can't be deferenced
-		$playerqueries = array();
-		$playerref = array();
-		for($i = 0; $i < count($this->playerlist); $i++)
-		{
-			if ($this->exactplayer)
-				$playerref[$i] = "^" . $this->playerlist[$i] . "$";
-			else
-				$playerref[$i] = ".*" . $this->playerlist[$i] . ".*";
-			$playerqueries[] = &$playerref[$i];
-		}
-
-		//Creates as many LIKE clauses as there are player search strings
-		$where = "WHERE (player RLIKE ?" .
-			str_repeat(" OR player RLIKE ?", count($this->playerlist) - 1) . ")";
-
-		//Basically do the same thing with teams, but only if a team was searched for
-		$teamqueries = array();
-		if(count($this->teamlist) > 0)
-		{
-			$teamref = array();
-			for($i = 0; $i < count($this->teamlist); $i++)
-			{
-				if($this->exactteam)
-					$teamref[$i] = "^" . $this->teamlist[$i] . "( .)?$";
-				else
-					$teamref[$i] = ".*" . $this->teamlist[$i] . ".*";
-				$teamqueries[] = &$teamref[$i];
-			}
-			$where .= " AND (team RLIKE ?" .
-				str_repeat(" OR team RLIKE ?", count($this->teamlist) - 1) . ")";
-		}
-
-		//The SELECT clause
+		//The clauses
 		$select = "SELECT source, player, playerid, team, date, tournament, tournid, division, divisionid";
+		$where = "WHERE MATCH(player) AGAINST(? IN BOOLEAN MODE)";
+		
+		$playersearch = $this->playersearch;
+		if(isset($this->teamsearch) && strlen($this->teamsearch) > 1)
+		{
+			$where .= " AND MATCH(team) AGAINST(? IN BOOLEAN MODE)";
+			$teamsearch = $this->teamsearch;
+		}
+
 
 		//Prepare the query
 		$stmt = $this->mysqli->prepare("$select FROM $this->playerdb $where " .
 			"ORDER BY date DESC, tournament ASC, team ASC, player ASC");
-		//There's one string for each query used
-		$types = str_repeat('s', count($this->playerlist) + count($this->teamlist));
-
-		//Bind_param doesn't really work with an unknown amount of queries, so we
-		//have to hack together the command
-		call_user_func_array(array(&$stmt, 'bind_param'),
-			array_merge((array)$types, $playerqueries, $teamqueries));
+		if(isset($this->teamsearch) && strlen($this->teamsearch) > 1)
+			$stmt->bind_param("ss", $playersearch, $teamsearch);
+		else
+			$stmt->bind_param("s", $playersearch);
 		$stmt->execute();
 		$stmt->bind_result($source, $player, $playerid, $team, $date, $tname, $tournid, $phasename, $phaseid);
 		$resulttable = array();
@@ -154,10 +79,8 @@ class PlayerModel extends Model
 		return array("css" => "big",
 					 "title" => $this->title,
 					 "headertext" => $this->headertext,
-					 "playersearch" => $this->playersearch,
-					 "teamsearch" => $this->teamsearch,
-					 "exactplayer" => $this->exactplayer,
-					 "exactteam" => $this->exactteam,
+					 "playersearch" => htmlentities($this->playersearch),
+					 "teamsearch" => htmlentities($this->teamsearch),
 					 "results" => $searchresults);
 	}
 }

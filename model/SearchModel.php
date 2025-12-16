@@ -25,8 +25,6 @@ class SearchModel extends Model
 			$queryarray[1] = urlencode($_GET['team']);
 			$columns = "team";
 			$values = "\"$queryarray[1]\"";
-			if(isset($_GET['exactteam']))
-				$queryarray[1] = '~' . $queryarray[1];
 		}
 		else if(isset($_GET['playersearch']))
 		{
@@ -37,16 +35,16 @@ class SearchModel extends Model
 				$queryarray[2] = urlencode($_GET['team']);
 				$columns = "team, player";
 				$values = "\"$queryarray[2]\", \"$queryarray[1]\"";
-				if(isset($_GET['exactteam']))
-					$queryarray[2] = '~' . $queryarray[2];
 			}
 			else
 			{
 				$columns = "player";
 				$values = "\"$queryarray[1]\"";
 			}
-			if(isset($_GET['exactplayer']))
-				$queryarray[1] = '~' . $queryarray[1];
+		}
+		else
+		{
+			return array();
 		}
 		$stmt = $this->mysqli->prepare("INSERT INTO " . $this->logdb . " ($columns) VALUES($values)");
 		$stmt->execute();

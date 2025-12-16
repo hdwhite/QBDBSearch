@@ -7,6 +7,10 @@
 				$oldtourn = "";
 				$oldteam = "";
 				$lasttourney = 0;
+				$rowtext1 = "";
+				$rowtext2 = "";
+				$rowtext3 = "";
+				$rowspan = "";
 				foreach($results as $cur)
 				{
 //					$cur['team'] = str_replace(" B", " 🅱\u{FE0F}", $cur['team']);

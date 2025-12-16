@@ -21,19 +21,10 @@ class IndexModel extends Model
 	//Retreives necessary data about the Index page
 	public function getdata()
 	{
-		//Gets the number of tournaments and teams stored in the database
-		$temp = $this->mysqli->query(
-			"SELECT COUNT(DISTINCT tournid, source) AS numtourneys, " .
-			"COUNT(DISTINCT team, tournid, source) AS numteams " .
-			"FROM $this->teamdb")
-			->fetch_assoc();
-		$numtourneys = $temp['numtourneys'];
-		$numteams = $temp['numteams'];
-
-		//Gets the number of players stored in the database
-		$numplayers = $this->mysqli->query(
-			"SELECT COUNT(DISTINCT player, team, tournid, source) AS numplayers FROM $this->playerdb")
-			->fetch_assoc()['numplayers'];
+		//Gets the number of tourneys, teams, and players stored in the database
+		$numtourneys = $this->mysqli->query("SELECT number FROM $this->statsdb WHERE statistic=\"tournaments\"")->fetch_assoc()['number'];
+		$numteams = $this->mysqli->query("SELECT number FROM $this->statsdb WHERE statistic=\"teams\"")->fetch_assoc()['number'];
+		$numplayers = $this->mysqli->query("SELECT number FROM $this->statsdb WHERE statistic=\"players\"")->fetch_assoc()['number'];
 
 		$newtourneys = $this->mysqli->query("SELECT * FROM $this->newtourneydb ORDER BY date");
 		while($newtourneytable[] = $newtourneys->fetch_assoc());

@@ -5,15 +5,15 @@
 	require_once($_dbconfig);
 
 	//Make sure to keep all non-NAQT tournaments
-	$mysqli->query("DROP TABLE $_newteamdb, $_newplayerdb");
+	$mysqli->query("DROP TABLE IF EXISTS $_newteamdb, $_newplayerdb");
 	$mysqli->query("CREATE TABLE $_newteamdb LIKE $_teamdb");
 	$mysqli->query("CREATE TABLE $_newplayerdb LIKE $_playerdb");
 	$mysqli->query("INSERT INTO $_newteamdb " .
 		"(source, team, teamid, date, tournament, tournid, division, divisionid) " .
 		"SELECT source, team, teamid, date, tournament, tournid, division, divisionid FROM $_teamdb WHERE source <> 1");
 	$mysqli->query("INSERT INTO $_newplayerdb " .
-		"(source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid) " .
-	 	"SELECT source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid FROM $_playerdb WHERE source <> 1");
+		"(source, player, playerid, team, date, tournament, tournid, division, divisionid) " .
+	 	"SELECT source, player, playerid, team, date, tournament, tournid, division, divisionid FROM $_playerdb WHERE source <> 1");
 	echo("Tables created.\n");
 
 	//Prepare the SQL insertions
@@ -21,10 +21,11 @@
 		"(source, team, teamid, date, tournament, tournid, division, divisionid) " .
 		"VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
 	$playerstmt = $mysqli->prepare("INSERT INTO $_newplayerdb" . 
-		"(source, player, playerid, team, teamid, date, tournament, tournid, division, divisionid) " .
-		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		"(source, player, playerid, team, date, tournament, tournid, division, divisionid) " .
+		"VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
 	$teamstmt->bind_param("isssssss", $source, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
-	$playerstmt->bind_param("isssssssss", $source, $pname, $pid, $teamname, $teamid, $tdate, $tname, $num, $phasename, $phaseid);
+	$playerstmt->bind_param("issssssss", $source, $pname, $pid, $teamname, $tdate, $tname, $num, $phasename, $phaseid);
+	echo("Tables created\n");
 
 	//NAQT uses source = 1, and the earliest results are from 2007
 	$source = 1;

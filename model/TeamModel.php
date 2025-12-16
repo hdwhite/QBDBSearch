@@ -5,7 +5,7 @@
 //workings of this file, please refer to PlayerModel.php
 class TeamModel extends Model
 {
-	private $teamlist, $teamsearch, $exactteam;
+	private $teamsearch;
 	public function __construct()
 	{
 		$this->init();
@@ -18,48 +18,18 @@ class TeamModel extends Model
 	}
 	public function setparams($params)
 	{
-		if (substr($params[0], 0, 3) == "%7E")
-		{
-			$this->exactteam = true;
-			$teamstr = urldecode(substr($params[0], 3));
-		}
-		elseif ($params[0][0] == "~")
-		{
-			$this->exactteam = true;
-			$teamstr = urldecode(substr($params[0], 1));
-		}
-		else
-		{
-			$this->exactteam = false;
-			$teamstr = urldecode($params[0]);
-		}
-		$this->teamsearch = htmlentities($teamstr);
-		$this->title .= $this->teamsearch;
-		$teamstr = strtolower($teamstr);
-		$teamstr = str_replace("*", "%", $teamstr);
-		$this->teamlist = explode(" or ", $teamstr);
+		$teamstr = urldecode($params[0]);
+		$this->title .= htmlentities($teamstr);
+		$this->teamsearch = $teamstr;
 	}
 	public function search()
 	{
-		if(max(array_map('strlen', $this->teamlist)) < 2) return array();
-		$teamqueries = array();
-		$teamref = array();
-		for($i = 0; $i < count($this->teamlist); $i++)
-		{
-			if($this->exactteam)
-				$teamref[$i] = "^" . $this->teamlist[$i] . "( .)?$";
-			else
-				$teamref[$i] = ".*" . $this->teamlist[$i] . ".*";
-			$teamqueries[] = &$teamref[$i];
-		}
-		$where = "WHERE team RLIKE ?" .
-			str_repeat(" OR team RLIKE ?", count($this->teamlist) - 1);
 		$select = "SELECT source, team, teamid, date, tournament, tournid, division, divisionid";
+		$where = "WHERE MATCH(team) AGAINST(? IN BOOLEAN MODE)";
+		$teamsearch = $this->teamsearch;
 		$stmt = $this->mysqli->prepare("$select FROM $this->teamdb $where " .
 			"ORDER BY date DESC, tournament ASC, team ASC");
-		$types = str_repeat('s', count($this->teamlist));
-		call_user_func_array(array(&$stmt, 'bind_param'),
-			array_merge((array)$types, $teamqueries));
+		$stmt->bind_param("s", $teamsearch);
 		$stmt->execute();
 		$stmt->bind_result($source, $team, $teamid, $date, $tname, $tournid, $phasename, $phaseid);
 		$resulttable = array();
@@ -81,8 +51,7 @@ class TeamModel extends Model
 		return array("css" => "big",
 					 "title" => $this->title,
 					 "headertext" => $this->headertext,
-					 "teamsearch" => $this->teamsearch,
-					 "exactteam" => $this->exactteam,
+					 "teamsearch" => htmlentities($this->teamsearch),
 					 "results" => $searchresults);
 	}
 }
