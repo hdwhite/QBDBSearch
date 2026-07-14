@@ -1,4 +1,5 @@
 <?php
+	$hsqbstart = 9001;
 	ini_set('display_errors', 1);
 	error_reporting(E_ALL);
 	//Gets table names and other database stuff. Actual table names are hidden
@@ -6,7 +7,7 @@
 	require_once("dbnames.inc");
 
 	//Fetches the number of tournament DB entries
-	$dbstats = file_get_contents("http://hsquizbowl.org/db/tournaments/dbstats.php");
+	$dbstats = file_get_contents("http://hsquizbowl.org/db/tournaments/dbstats.php", false, $_hsqbcontext);
 	preg_match("/max=(\d+)/", $dbstats, $statarray);
 	$numtourneys = $statarray[1];
 	//There is no easy way to tell how many tournaments are stored on the NAQT
@@ -24,10 +25,10 @@
 	//We can keep NAQT data
 	$mysqli->query("INSERT INTO $_newteamdb " .
 		"(source, team, teamid, date, tournament, tournid, division, divisionid) " .
-		"SELECT source, team, teamid, date, tournament, tournid, division, divisionid FROM $_teamdb WHERE source = 1");
+		"SELECT source, team, teamid, date, tournament, tournid, division, divisionid FROM $_teamdb WHERE source = 1 OR tournid < $hsqbstart");
 	$mysqli->query("INSERT INTO $_newplayerdb " .
 		"(source, player, playerid, team, date, tournament, tournid, division, divisionid) " .
-	 	"SELECT source, player, playerid, team, date, tournament, tournid, division, divisionid FROM $_playerdb WHERE source = 1");
+	 	"SELECT source, player, playerid, team, date, tournament, tournid, division, divisionid FROM $_playerdb WHERE source = 1 OR tournid < $hsqbstart");
 	echo("Tables created.\n");
 
 	//Prepare the SQL insertions
@@ -158,10 +159,10 @@
 
 	//Now to load in HSQB
 	$source = 0;
-	for($num = 1; $num <= $numtourneys; $num++)
+	for($num = $hsqbstart; $num <= $numtourneys; $num++)
 	{
 		//Gets the tournament page
-		$tpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num");
+		$tpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num", false, $_hsqbcontext);
 		
 		//Gets the tournament name. It is in the second <H2> bracket on the page.
 		//If no name is found, the tournament probably doesn't exist.
@@ -186,7 +187,7 @@
 			$phaseid = trim($mysqli->real_escape_string($link[1]));
 			
 			//Now open each stat report
-			$rpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num/stats/" . $link[1]);
+			$rpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num/stats/" . $link[1], false, $_hsqbcontext);
 			
 			//All team names in each stat report link to their detail page, so use that
 			preg_match_all("/teamdetail\/#(\w*)>(.*)<\/[Aa]/", $rpage, $teammatch, PREG_SET_ORDER);
@@ -200,14 +201,15 @@
 			}
 
 			//Now open the individual stats page
-			$rpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num/stats/" . $link[1] . "/individuals");
+			$rpage = file_get_contents("http://hsquizbowl.org/db/tournaments/$num/stats/" . $link[1] . "/individuals", false, $_hsqbcontext);
 			
 			//Similarly, individuals are linked to their player detail page.
 			//We have to get their team info as well, though.
 			$sqbs = preg_match_all("/playerdetail\/#(p[0-9]*_[0-9]*)>(.*)<\/A.*\n.*LEFT>(.*)<\/td/", $rpage, $playermatch, PREG_SET_ORDER);
 			//SQBS and Yellowfruit use slightly different HTML, which we have to account for
 			if ($sqbs == 0)
-				preg_match_all("/playerdetail\/#(\w*-\w*)>(.*)<\/a.*left><a.*>(.+)<\/a><\/td/Us", $rpage, $playermatch, PREG_SET_ORDER);
+	//			preg_match_all("/playerdetail\/#(\w*-\w*)>(.*)<\/a.*left><a.*>(.+)<\/a><\/td/Us", $rpage, $playermatch, PREG_SET_ORDER);
+				preg_match_all("/playerdetail\/#(\w*-\w*)>(.*)<\/a.*teamdetail\/#\w*>(.+)<\/a><\/td/Us", $rpage, $playermatch, PREG_SET_ORDER);
 
 			if (count($playermatch) == 0 && $sqbs == 0)
 				echo("No player stats were found for this Yellowfruit tournament.\n");
