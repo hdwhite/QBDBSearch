@@ -87,10 +87,11 @@ def load_naqt_tournament(tournament, cursor: mysql.connector.cursor.MySQLCursor)
         division_id = division["division_id"]
         division_name = division["name"]
         division_data = requests.get(f"https://www.naqt.com/api/stats/TournamentResults?tournament_id={tournament_id}&division_id={division_id}",
-                                     headers={"Authorization": f"Bearer {NAQT_API_KEY}"}).json()
+                                     headers={"Authorization": f"Bearer {NAQT_API_KEY}"})
+        print(division_data)
         time.sleep(1)
         # Within each Division, Teams are grouped by School
-        for index, school_data in enumerate(division_data["objects"]):
+        for index, school_data in enumerate(division_data.json()["objects"]):
             if index == 0: # Skipping registration data
                 continue
             for team_data in school_data["teams"]:
@@ -165,7 +166,11 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
         if not team_matches:
             print(f"Could not find any teams for HSQB tournament {tournament_id} phase {phase_name}")
             continue
+        completed_teams = set()
         for team_id, team_name in team_matches:
+            if team_name in completed_teams:
+                continue
+            completed_teams.add(team_name)
             cursor.execute("INSERT INTO newstats (source, team, teamid, date, tournament, tournid, division, divisionid) "
                            "VALUES (0, %s, %s, %s, %s, %s, %s, %s)",
                            (team_name.strip(), team_id.strip(), tournament_date, tournament_name.strip(), tournament_id,
