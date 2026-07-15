@@ -71,6 +71,18 @@ def parse_args(argv):
             test = True
     return hsqb, naqt, test
 
+def insert_data(cursor: mysql.connector.cursor.MySQLCursor, table: str, data: list):
+    try:
+        if table == "newstats":
+            cursor.execute("INSERT INTO newstats (source, team, teamid, date, tournament, tournid, division, divisionid) "
+                           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", data)
+        elif table == "newplayers":
+            cursor.execute("INSERT INTO newplayers (source, player, playerid, team, date, tournament, tournid, division, divisionid) "
+                           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", data)
+    except Exception as e:
+        print(f"Error occurred while inserting data into {table}: {e}")
+        print(f"Data attempted to insert: {data}")
+
 # Loads an individual NAQT tournament into the database
 def load_naqt_tournament(tournament, cursor: mysql.connector.cursor.MySQLCursor):
     # We skip Buzzword
@@ -81,7 +93,6 @@ def load_naqt_tournament(tournament, cursor: mysql.connector.cursor.MySQLCursor)
     cursor.execute("DELETE FROM newplayers WHERE source=1 AND tournid=%s", (tournament_id,))
     tournament_name = tournament["name"]
     tournament_date = tournament["end"]
-    print(f"NAQT {tournament_id}: {tournament_name}\n")
     # Tournaments are divided into Divisions, so we will iterate over them
     for division in tournament["divisions"]:
         division_id = division["division_id"]
@@ -97,15 +108,11 @@ def load_naqt_tournament(tournament, cursor: mysql.connector.cursor.MySQLCursor)
             for team_data in school_data["teams"]:
                 team_id = team_data["team_id"]
                 team_name = team_data["name"]
-                cursor.execute("INSERT INTO newstats (source, team, teamid, date, tournament, tournid, division, divisionid) "
-                               "VALUES (1, %s, %s, %s, %s, %s, %s, %s)",
-                               (team_name, team_id, tournament_date, tournament_name, tournament_id, division_name, division_id))
+                insert_data(cursor, "newstats", [(1, team_name, team_id, tournament_date, tournament_name, tournament_id, division_name, division_id)])
                 # We've inserted in teams, now do players
                 for player_data in team_data["players"]:
                     player_id = player_data["team_member_id"]
-                    cursor.execute("INSERT INTO newplayers (source, player, playerid, team, date, tournament, tournid, division, divisionid) "
-                                   "VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s)",
-                                   (player_data["name"], player_id, team_name, tournament_date, tournament_name, tournament_id, division_name, division_id))
+                    insert_data(cursor, "newplayers", [(1, player_data["name"], player_id, team_name, tournament_date, tournament_name, tournament_id, division_name, division_id)])
 
 # Loads NAQT tournaments, given the scope of events to load
 def load_naqt_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor):
@@ -149,7 +156,7 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
         print(f"Could not find tournament date for HSQB tournament {tournament_id}")
         return
     tournament_date = datetime.strptime(match.group(1) + " " + match.group(2), "%B %d, %Y").strftime("%Y-%m-%d")
-    print(f"HSQB {tournament_id}: {tournament_name}\n")
+    print(f"HSQB {tournament_id}: {tournament_name}")
 
     # Gets the stat report links for each phase
     link_matches = re.findall(r"stats/(.*?)/\">(.*?)<", tournament_page)
@@ -171,10 +178,7 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
             if team_name in completed_teams:
                 continue
             completed_teams.add(team_name)
-            cursor.execute("INSERT INTO newstats (source, team, teamid, date, tournament, tournid, division, divisionid) "
-                           "VALUES (0, %s, %s, %s, %s, %s, %s, %s)",
-                           (team_name.strip(), team_id.strip(), tournament_date, tournament_name.strip(), tournament_id,
-                            phase_name.strip(), phase_id.strip()))
+            insert_data(cursor, "newstats", [(0, team_name.strip(), team_id.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip())])
 
         # Now to get individual player info
         req = urllib.request.Request(f"http://hsquizbowl.org/db/tournaments/{tournament_id}/stats/{phase_id}/individuals")
@@ -195,11 +199,7 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
         
         # Insert each player
         for player_id, player_name, team_name in player_matches:
-            cursor.execute("INSERT INTO newplayers (source, player, playerid, team, date, tournament, tournid, division, divisionid) "
-                           "VALUES (0, %s, %s, %s, %s, %s, %s, %s, %s)",
-                           (player_name.strip(), player_id.strip(), team_name.strip(), 
-                            tournament_date, tournament_name.strip(), tournament_id, 
-                            phase_name.strip(), phase_id.strip()))
+            insert_data(cursor, "newplayers", [(0, player_name.strip(), player_id.strip(), team_name.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip())])
 
 # Loads HSQB tournaments, given the scope of events to load
 def load_hsqb_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor):
