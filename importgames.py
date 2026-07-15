@@ -7,7 +7,7 @@ import sys
 import time
 import urllib.request
 
-sys.path.insert(1, "/home/harry")
+sys.path.insert(1, "/var/www/protected/")
 from dbconfig import DB_CONFIG, HSQB_KEY, HSQB_SECRET, NAQT_API_KEY
 
 # Mock connection and cursor classes so to do test runs without altering the database
@@ -17,7 +17,10 @@ class MockCursor:
     
     def execute(self, query, params=None):
         self.queries.append((query, params))
-        print(f"[MOCK] {query[:80]}...")
+        if params is None:
+            print(f"[MOCK] {query.strip()}")
+        else:
+            print(f"[MOCK] {query.strip()}\n[MOCK] values={list(params)}")
     
     def fetchone(self):
         return (0, 0)
@@ -123,7 +126,7 @@ def load_naqt_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor
     naqt_data = requests.get(f"https://www.naqt.com/api/stats/AvailableResults?start={start_date}&end={end_date}",
                              headers={"Authorization": f"Bearer {NAQT_API_KEY}"}).json()
     time.sleep(1) # Sleep for 1 second for rate limiting
-    for tournament in naqt_data["objects"]:
+    for tournament in naqt_data:
         load_naqt_tournament(tournament, cursor)
     print("All NAQT tournaments inserted.\n")
 
@@ -134,11 +137,11 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
     with urllib.request.urlopen(req) as response:
         tournament_page = response.read().decode("utf-8")
     # Gets the tounament name
-    match = re.search(r"<H2>(.*)</H2>", tournament_page)
-    if not match:
+    match = re.findall(r"<H2>(.*)</H2>", tournament_page)
+    if len(match) < 2:
         print(f"Could not find tournament name for HSQB tournament {tournament_id}")
         return
-    tournament_name = match.group(1)
+    tournament_name = match[1].strip()
     # Gets the tournament date, which can potentially be multiple days
     match = re.search(r"<H5>.*([A-Z][a-z]*) .*([0-9]{2}, [0-9]{4})</H5>", tournament_page)
     if not match:
@@ -148,7 +151,7 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
     print(f"HSQB {tournament_id}: {tournament_name}\n")
 
     # Gets the stat report links for each phase
-    link_matches = re.findall(r"stats/(.*)/\">(.*)<", tournament_page)
+    link_matches = re.findall(r"stats/(.*?)/\">(.*?)<", tournament_page)
     if not link_matches:
         print(f"Could not find any stat report links for HSQB tournament {tournament_id}")
         return
@@ -179,7 +182,7 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
         
         # If that doesn't work, it's a good chance it's Yellowfruit
         if not player_matches:
-            player_matches = re.findall(r"playerdetail/#(\w*-\w*)>(.*)</a.*teamdetail/#\w*>(.+)</a></td", individuals_page, re.IGNORECASE | re.DOTALL)
+            player_matches = re.findall(r"playerdetail/#(\w*-\w*)>(.*?)</a.*?teamdetail/#\w*>(.+?)</a></td", individuals_page, re.IGNORECASE | re.DOTALL)
         
         if not player_matches:
             print(f"No player stats found for HSQB tournament {tournament_id} phase {phase_name}")
@@ -274,3 +277,6 @@ def main():
     finally:
         cursor.close()
         conn.close()
+
+if __name__ == "__main__":
+    main()
