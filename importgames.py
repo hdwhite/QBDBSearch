@@ -50,7 +50,7 @@ class MockConnection:
 # -t, --test: If included, runs in test mode without altering the database
 def parse_args(argv):
     def parse_opt(arg):
-        if arg in (None, "a", "all"):
+        if arg in (None, "", "a", "all"):
             return "all"
         if arg in ("r", "recent"):
             return "recent"
@@ -61,7 +61,7 @@ def parse_args(argv):
     hsqb = "recent"
     naqt = "recent"
     test = False
-    optlist, _ = getopt.getopt(argv, "htn", ["hsqb", "naqt", "test"])
+    optlist, _ = getopt.getopt(argv, "h:n:t", ["hsqb=", "naqt=", "test"])
     for opt, arg in optlist:
         if opt in ("-h", "--hsqb"):
             hsqb = parse_opt(arg)
@@ -99,7 +99,6 @@ def load_naqt_tournament(tournament, cursor: mysql.connector.cursor.MySQLCursor)
         division_name = division["name"]
         division_data = requests.get(f"https://www.naqt.com/api/stats/TournamentResults?tournament_id={tournament_id}&division_id={division_id}",
                                      headers={"Authorization": f"Bearer {NAQT_API_KEY}"})
-        print(division_data)
         time.sleep(1)
         # Within each Division, Teams are grouped by School
         for index, school_data in enumerate(division_data.json()["objects"]):
@@ -108,11 +107,11 @@ def load_naqt_tournament(tournament, cursor: mysql.connector.cursor.MySQLCursor)
             for team_data in school_data["teams"]:
                 team_id = team_data["team_id"]
                 team_name = team_data["name"]
-                insert_data(cursor, "newstats", [(1, team_name, team_id, tournament_date, tournament_name, tournament_id, division_name, division_id)])
+                insert_data(cursor, "newstats", [1, team_name, team_id, tournament_date, tournament_name, tournament_id, division_name, division_id])
                 # We've inserted in teams, now do players
                 for player_data in team_data["players"]:
                     player_id = player_data["team_member_id"]
-                    insert_data(cursor, "newplayers", [(1, player_data["name"], player_id, team_name, tournament_date, tournament_name, tournament_id, division_name, division_id)])
+                    insert_data(cursor, "newplayers", [1, player_data["name"], player_id, team_name, tournament_date, tournament_name, tournament_id, division_name, division_id])
 
 # Loads NAQT tournaments, given the scope of events to load
 def load_naqt_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor):
@@ -126,6 +125,7 @@ def load_naqt_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor
                        "FROM stats WHERE source = 1")
     print("Loaded in saved NAQT tournaments")
 
+    print(scope)
     if scope == "none":
         return
     # Default for "recent" is four weeks ago, which should cover weekly runs
@@ -178,7 +178,7 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
             if team_name in completed_teams:
                 continue
             completed_teams.add(team_name)
-            insert_data(cursor, "newstats", [(0, team_name.strip(), team_id.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip())])
+            insert_data(cursor, "newstats", [0, team_name.strip(), team_id.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip()])
 
         # Now to get individual player info
         req = urllib.request.Request(f"http://hsquizbowl.org/db/tournaments/{tournament_id}/stats/{phase_id}/individuals")
@@ -187,7 +187,7 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
             individuals_page = response.read().decode("utf-8")
         
         # This regex will match SQBS tournaments
-        player_matches = re.findall(r"playerdetail/#(p[0-9]*_[0-9]*)>(.*)</A.*\n.*LEFT>(.*)</td", individuals_page, re.DOTALL)
+        player_matches = re.findall(r"playerdetail/#(p[0-9]*_[0-9]*)>(.*?)</A.*?\n.*?LEFT>(.*?)</td", individuals_page, re.DOTALL)
         
         # If that doesn't work, it's a good chance it's Yellowfruit
         if not player_matches:
@@ -198,8 +198,12 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
             continue
         
         # Insert each player
+		completed_players = set()
         for player_id, player_name, team_name in player_matches:
-            insert_data(cursor, "newplayers", [(0, player_name.strip(), player_id.strip(), team_name.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip())])
+			if (player_name, team_name) in completed_players:
+				continue
+			completed_players.add((player_name, team_name))
+            insert_data(cursor, "newplayers", [0, player_name.strip(), player_id.strip(), team_name.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip()])
 
 # Loads HSQB tournaments, given the scope of events to load
 def load_hsqb_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor):
