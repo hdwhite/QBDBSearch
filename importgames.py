@@ -83,35 +83,60 @@ def insert_data(cursor: mysql.connector.cursor.MySQLCursor, table: str, data: li
         print(f"Error occurred while inserting data into {table}: {e}")
         print(f"Data attempted to insert: {data}")
 
+# Fetches data from the NAQT API, with simple error handling
+def fetch_naqt_data(url: str):
+    url = f"https://www.naqt.com/api/stats/{url}"
+    try:
+        response = requests.get(url, headers={"Authorization": f"Bearer {NAQT_API_KEY}"})
+        time.sleep(1) # To prevent rate limiting
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching NAQT data from {url}: {e}")
+        return None
+
+def fetch_hsqb_data(url: str):
+    url = f"http://hsquizbowl.org/db/{url}"
+    req = urllib.request.Request(url)
+    req.add_header(HSQB_KEY, HSQB_SECRET)
+    try:
+        with urllib.request.urlopen(req) as response:
+            return response.read().decode("utf-8")
+    except Exception as e:
+        print(f"Error fetching HSQB data from {url}: {e}")
+        return None
+
 # Loads an individual NAQT tournament into the database
 def load_naqt_tournament(tournament, cursor: mysql.connector.cursor.MySQLCursor):
     # We skip Buzzword
     if str(tournament["scoring_type"]).lower() == "buzzword":
         return
-    tournament_id = tournament["tournament_id"]
-    cursor.execute("DELETE FROM newstats WHERE source=1 AND tournid=%s", (tournament_id,))
-    cursor.execute("DELETE FROM newplayers WHERE source=1 AND tournid=%s", (tournament_id,))
-    tournament_name = tournament["name"]
-    tournament_date = tournament["end"]
+    cursor.execute("DELETE FROM newstats WHERE source=1 AND tournid=%s", (tournament["tournament_id"],))
+    cursor.execute("DELETE FROM newplayers WHERE source=1 AND tournid=%s", (tournament["tournament_id"],))
+
     # Tournaments are divided into Divisions, so we will iterate over them
     for division in tournament["divisions"]:
-        division_id = division["division_id"]
-        division_name = division["name"]
-        division_data = requests.get(f"https://www.naqt.com/api/stats/TournamentResults?tournament_id={tournament_id}&division_id={division_id}",
-                                     headers={"Authorization": f"Bearer {NAQT_API_KEY}"})
-        time.sleep(1)
+        division_data = fetch_naqt_data(f"TournamentResults?"
+                                        f"tournament_id={tournament['tournament_id']}&"
+                                        f"division_id={division['division_id']}")
+        if division_data is None:
+            print(f"Failed to fetch division data for tournament "
+                  f"{tournament['tournament_id']} division {division['division_id']}")
+            continue
         # Within each Division, Teams are grouped by School
-        for index, school_data in enumerate(division_data.json()["objects"]):
+        for index, school_data in enumerate(division_data["objects"]):
             if index == 0: # Skipping registration data
                 continue
             for team_data in school_data["teams"]:
-                team_id = team_data["team_id"]
-                team_name = team_data["name"]
-                insert_data(cursor, "newstats", [1, team_name, team_id, tournament_date, tournament_name, tournament_id, division_name, division_id])
+                insert_data(cursor, "newstats",
+                    [1, team_data["name"], team_data["team_id"], tournament["end"], tournament["name"], 
+                     tournament["tournament_id"], division["name"], division["division_id"]])
                 # We've inserted in teams, now do players
                 for player_data in team_data["players"]:
-                    player_id = player_data["team_member_id"]
-                    insert_data(cursor, "newplayers", [1, player_data["name"], player_id, team_name, tournament_date, tournament_name, tournament_id, division_name, division_id])
+                    insert_data(cursor, "newplayers",
+                        [1, player_data["name"], player_data["team_member_id"],
+                         team_data["name"], tournament["end"], tournament["name"],
+                         tournament["tournament_id"], division["name"], division["division_id"]])
 
 # Loads NAQT tournaments, given the scope of events to load
 def load_naqt_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor):
@@ -131,19 +156,20 @@ def load_naqt_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor
     # Default for "recent" is four weeks ago, which should cover weekly runs
     start_date = (datetime.now() - timedelta(weeks=4)).strftime("%Y-%m-%d") if scope == "recent" else "1990-01-01"
     end_date = datetime.now().strftime("%Y-%m-%d")
-    naqt_data = requests.get(f"https://www.naqt.com/api/stats/AvailableResults?start={start_date}&end={end_date}",
-                             headers={"Authorization": f"Bearer {NAQT_API_KEY}"}).json()
-    time.sleep(1) # Sleep for 1 second for rate limiting
+    naqt_data = fetch_naqt_data(f"AvailableResults?start={start_date}&end={end_date}")
+    if naqt_data is None:
+        print("Failed to fetch NAQT data.")
+        return
     for tournament in naqt_data:
         load_naqt_tournament(tournament, cursor)
     print("All NAQT tournaments inserted.\n")
 
 # Loads an individual HSQB tournament into the database
 def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQLCursor):
-    req = urllib.request.Request(f"http://hsquizbowl.org/db/tournaments/{tournament_id}")
-    req.add_header(HSQB_KEY, HSQB_SECRET)
-    with urllib.request.urlopen(req) as response:
-        tournament_page = response.read().decode("utf-8")
+    tournament_page = fetch_hsqb_data(f"tournaments/{tournament_id}")
+    if not tournament_page:
+        print(f"Could not fetch data for HSQB tournament {tournament_id}")
+        return
     # Gets the tounament name
     match = re.findall(r"<H2>(.*)</H2>", tournament_page)
     if len(match) < 2:
@@ -164,10 +190,10 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
         print(f"Could not find any stat report links for HSQB tournament {tournament_id}")
         return
     for phase_id, phase_name in link_matches:
-        req = urllib.request.Request(f"http://hsquizbowl.org/db/tournaments/{tournament_id}/stats/{phase_id}")
-        req.add_header(HSQB_KEY, HSQB_SECRET)
-        with urllib.request.urlopen(req) as response:
-            stats_page = response.read().decode("utf-8")
+        stats_page = fetch_hsqb_data(f"tournaments/{tournament_id}/stats/{phase_id}")
+        if not stats_page:
+            print(f"Could not fetch stats for HSQB tournament {tournament_id} phase {phase_name}")
+            continue
         # Gets the team information from the stats page
         team_matches = re.findall(r"teamdetail/#(\w*)>(.*)</[Aa]", stats_page)
         if not team_matches:
@@ -178,14 +204,16 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
             if team_name in completed_teams:
                 continue
             completed_teams.add(team_name)
-            insert_data(cursor, "newstats", [0, team_name.strip(), team_id.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip()])
+            insert_data(cursor, "newstats",
+                [0, team_name.strip(), team_id.strip(), tournament_date,
+                 tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip()])
 
         # Now to get individual player info
-        req = urllib.request.Request(f"http://hsquizbowl.org/db/tournaments/{tournament_id}/stats/{phase_id}/individuals")
-        req.add_header(HSQB_KEY, HSQB_SECRET)
-        with urllib.request.urlopen(req) as response:
-            individuals_page = response.read().decode("utf-8")
-        
+        individuals_page = fetch_hsqb_data(f"tournaments/{tournament_id}/stats/{phase_id}/individuals")
+        if not individuals_page:
+            print(f"Could not fetch individual stats for HSQB tournament {tournament_id} phase {phase_name}")
+            continue
+
         # This regex will match SQBS tournaments
         player_matches = re.findall(r"playerdetail/#(p[0-9]*_[0-9]*)>(.*?)</A.*?\n.*?LEFT>(.*?)</td", individuals_page, re.DOTALL)
         
@@ -198,19 +226,21 @@ def load_hsqb_tournament(tournament_id: int, cursor: mysql.connector.cursor.MySQ
             continue
         
         # Insert each player
-		completed_players = set()
+        completed_players = set()
         for player_id, player_name, team_name in player_matches:
-			if (player_name, team_name) in completed_players:
-				continue
-			completed_players.add((player_name, team_name))
-            insert_data(cursor, "newplayers", [0, player_name.strip(), player_id.strip(), team_name.strip(), tournament_date, tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip()])
+            if (player_name, team_name) in completed_players:
+                continue
+            completed_players.add((player_name, team_name))
+            insert_data(cursor, "newplayers",
+                [0, player_name.strip(), player_id.strip(), team_name.strip(), tournament_date,
+                 tournament_name.strip(), tournament_id, phase_name.strip(), phase_id.strip()])
 
 # Loads HSQB tournaments, given the scope of events to load
 def load_hsqb_tournaments(scope: str, cursor: mysql.connector.cursor.MySQLCursor):
-    req = urllib.request.Request("http://hsquizbowl.org/db/tournaments/dbstats.php")
-    req.add_header(HSQB_KEY, HSQB_SECRET)
-    with urllib.request.urlopen(req) as response:
-        db_stats = response.read().decode("utf-8")
+    db_stats = fetch_hsqb_data("tournaments/dbstats.php")
+    if not db_stats:
+        print("Could not fetch DB stats for HSQB")
+        return
     # HSQB page which contains the current max tournamnent ID
     match = re.search(r"max=(\d+)", db_stats)
     if match:
